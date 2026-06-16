@@ -1,1562 +1,186 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>3D Cafe Rush</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bakery Boss</title>
   <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      margin: 0;
-      overflow: hidden;
-      background: #1f1714;
-      font-family: Arial, sans-serif;
-      color: white;
-    }
-
-    #hud {
-      position: fixed;
-      top: 12px;
-      left: 12px;
-      background: rgba(20, 12, 8, 0.82);
-      padding: 12px 16px;
-      border-radius: 12px;
-      width: 350px;
-      line-height: 1.45;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.35);
-      z-index: 5;
-    }
-
-    #orderBox {
-      position: fixed;
-      top: 12px;
-      right: 12px;
-      background: rgba(20, 12, 8, 0.82);
-      padding: 12px 16px;
-      border-radius: 12px;
-      width: 360px;
-      line-height: 1.45;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.35);
-      z-index: 5;
-    }
-
-    #message {
-      position: fixed;
-      bottom: 18px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255, 239, 204, 0.95);
-      color: #2b1a12;
-      padding: 12px 22px;
-      border-radius: 14px;
-      font-size: 18px;
-      min-width: 430px;
-      text-align: center;
-      z-index: 5;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.35);
-    }
-
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.7);
-      display: none;
+      min-height: 100vh;
+      display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 10;
+      font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+      background: radial-gradient(circle at 50% 0%, #3a2a1c 0%, #1c130d 70%);
+      color: #fff5e6;
+      overflow: hidden;
+      padding: 20px;
     }
 
-    .panel {
-      background: #f5eadc;
-      color: #2b1a12;
-      border-radius: 16px;
-      padding: 24px;
-      width: 650px;
-      box-shadow: 0 20px 45px rgba(0,0,0,0.55);
-      border: 4px solid #3a241b;
+    /* floating background sprinkles */
+    .sprinkle {
+      position: fixed;
+      font-size: 28px;
+      opacity: 0.18;
+      animation: float 9s ease-in-out infinite;
+      pointer-events: none;
+      user-select: none;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50%      { transform: translateY(-22px) rotate(12deg); }
+    }
+
+    .welcome {
+      position: relative;
+      z-index: 2;
       text-align: center;
+      max-width: 920px;
+      width: 100%;
     }
 
-    button {
-      border: none;
-      border-radius: 10px;
-      padding: 12px 16px;
-      margin: 7px;
-      font-size: 16px;
+    .logo {
+      font-size: clamp(46px, 9vw, 92px);
+      font-weight: 900;
+      letter-spacing: 2px;
+      line-height: 1;
+      background: linear-gradient(180deg, #ffe29a 0%, #ffb347 60%, #ff8c42 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 6px 0 rgba(0,0,0,0.35));
+      animation: pop 0.6s ease-out;
+    }
+    @keyframes pop {
+      0%   { transform: scale(0.6); opacity: 0; }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+
+    .tagline {
+      margin-top: 14px;
+      font-size: clamp(16px, 2.6vw, 22px);
+      color: #ffd9a0;
+      opacity: 0.9;
+    }
+
+    .cards {
+      margin-top: 50px;
+      display: flex;
+      gap: 28px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .card {
+      flex: 1 1 320px;
+      max-width: 380px;
+      background: rgba(255, 245, 230, 0.06);
+      border: 2px solid rgba(255, 210, 150, 0.25);
+      border-radius: 22px;
+      padding: 34px 28px;
       cursor: pointer;
-      background: #ffffff;
-      color: #2b1a12;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+      backdrop-filter: blur(4px);
+    }
+    .card:hover {
+      transform: translateY(-8px) scale(1.02);
+      border-color: rgba(255, 210, 150, 0.75);
+      background: rgba(255, 245, 230, 0.12);
+      box-shadow: 0 18px 45px rgba(0,0,0,0.5);
+    }
+    .card:active { transform: translateY(-3px) scale(1.0); }
+
+    .card .emoji {
+      font-size: 64px;
+      display: block;
+      margin-bottom: 12px;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
     }
 
-    button.selected {
-      background: #57cc99;
-      color: #10291f;
+    .card h2 {
+      font-size: 28px;
+      margin-bottom: 6px;
+    }
+
+    .card .sub {
+      font-size: 15px;
+      color: #ffd9a0;
+      opacity: 0.85;
+      margin-bottom: 16px;
+    }
+
+    .card .desc {
+      font-size: 14.5px;
+      line-height: 1.5;
+      color: #f3e6d3;
+      opacity: 0.9;
+    }
+
+    .badge {
+      display: inline-block;
+      margin-top: 18px;
+      font-size: 13px;
       font-weight: bold;
+      padding: 6px 14px;
+      border-radius: 999px;
     }
+    .badge.arun  { background: #4a90e2; color: #fff; }
+    .badge.emma  { background: #57cc99; color: #08251a; }
 
-    button.main {
-      background: #3a86ff;
-      color: white;
-    }
-
-    button.danger {
-      background: #ef476f;
-      color: white;
-    }
-
-    #timerBarOuter {
-      width: 100%;
-      height: 14px;
-      background: #5d4037;
-      border-radius: 8px;
-      overflow: hidden;
-      margin-top: 6px;
-    }
-
-    #timerBarInner {
-      height: 100%;
-      width: 100%;
-      background: #57cc99;
-    }
-
-    .prepBar {
-      width: 420px;
-      height: 28px;
-      background: #ddd;
-      border-radius: 10px;
-      margin: 25px auto;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .greenZone {
-      position: absolute;
-      left: 42%;
-      width: 16%;
-      height: 100%;
-      background: #57cc99;
-    }
-
-    .marker {
-      position: absolute;
-      top: -10px;
-      width: 10px;
-      height: 48px;
-      background: #ef476f;
-      left: 0%;
-    }
-
-    .measureCup {
-      width: 70px;
-      height: 210px;
-      border: 4px solid #2b1a12;
-      border-radius: 10px;
-      margin: 20px auto;
-      position: relative;
-      overflow: hidden;
-      background: #eee;
-    }
-
-    .measureTarget {
-      position: absolute;
-      bottom: 55%;
-      width: 100%;
-      height: 17%;
-      background: rgba(87, 204, 153, 0.75);
-    }
-
-    .measureFill {
-      position: absolute;
-      bottom: 0;
-      width: 100%;
-      height: 0%;
-      background: #3a86ff;
-    }
-
-    #gameOver, #dayClear {
+    footer {
       position: fixed;
-      inset: 0;
-      display: none;
-      background: rgba(0,0,0,0.75);
-      align-items: center;
-      justify-content: center;
-      z-index: 20;
+      bottom: 16px;
+      left: 0;
+      right: 0;
       text-align: center;
-    }
-
-    .bigPanel {
-      background: #fff0dc;
-      color: #2b1a12;
-      border-radius: 18px;
-      padding: 35px;
-      width: 520px;
-      border: 6px solid #b00020;
-      box-shadow: 0 20px 55px rgba(0,0,0,0.6);
-    }
-
-    .success {
-      border-color: #57cc99;
+      font-size: 13px;
+      color: rgba(255, 220, 180, 0.45);
+      z-index: 2;
     }
   </style>
 </head>
 <body>
-
-<div id="hud">
-  <b>3D Cafe Rush</b><br>
-  Move: WASD / Arrow Keys<br>
-  Interact: E or Space<br>
-  Restart if fired: R<br><br>
-  <span id="dayText"></span><br>
-  <span id="holdingText"></span><br>
-  <span id="ovenText"></span>
-</div>
-
-<div id="orderBox">
-  <b>Current Order</b>
-  <div id="orderText">Seat a customer to get an order.</div>
-  <div id="timerBarOuter">
-    <div id="timerBarInner"></div>
-  </div>
-</div>
-
-<div id="message">Loading...</div>
-
-<div id="pantryModal" class="modal">
-  <div class="panel">
-    <h2>Pantry</h2>
-    <p>Choose the exact ingredients needed for the order.</p>
-    <p id="neededText"></p>
-    <div id="ingredientButtons"></div>
-    <br>
-    <button class="main" onclick="finishPantry()">Done</button>
-    <button class="danger" onclick="closePantry()">Cancel</button>
-  </div>
-</div>
-
-<div id="prepModal" class="modal">
-  <div class="panel">
-    <h2>Prep Station</h2>
-    <div id="prepContent"></div>
-  </div>
-</div>
-
-<div id="gameOver">
-  <div class="bigPanel">
-    <h1>YOU GOT FIRED!</h1>
-    <p id="firedReason"></p>
-    <h3 id="survivedText"></h3>
-    <p>Press R to restart from Day 1.</p>
-  </div>
-</div>
-
-<div id="dayClear">
-  <div class="bigPanel success">
-    <h1>Day Complete!</h1>
-    <p id="unlockText"></p>
-    <p>Press Enter or Space to start the next day.</p>
-  </div>
-</div>
-
-<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-
-<script>
-let scene, camera, renderer;
-let clock = new THREE.Clock();
-
-const keys = {};
-let state = "playing";
-
-let day = 1;
-let ordersDone = 0;
-let ordersNeeded = 3;
-let mistakes = 0;
-
-let message = "Walk to the customer at the entrance and press E.";
-let firedReason = "";
-let unlockMessage = "";
-
-const recipes = [
-  {
-    name: "Coffee",
-    ingredients: ["Coffee Beans"],
-    needsOven: false,
-    prepTask: "measuring",
-    timeLimit: 22
-  },
-  {
-    name: "Toast",
-    ingredients: ["Bread"],
-    needsOven: true,
-    prepTask: "cutting",
-    cookTime: 4,
-    burnTime: 4,
-    timeLimit: 27
-  },
-  {
-    name: "Latte",
-    ingredients: ["Coffee Beans", "Milk"],
-    needsOven: false,
-    prepTask: "mixing",
-    timeLimit: 26
-  },
-  {
-    name: "Cheese Toastie",
-    ingredients: ["Bread", "Cheese"],
-    needsOven: true,
-    prepTask: "cutting",
-    cookTime: 5,
-    burnTime: 4,
-    timeLimit: 31
-  },
-  {
-    name: "Cookies",
-    ingredients: ["Flour", "Sugar", "Butter", "Chocolate Chips"],
-    needsOven: true,
-    prepTask: "tray",
-    cookTime: 7,
-    burnTime: 5,
-    timeLimit: 40
-  }
-];
-
-let ingredientUnlocks = ["Milk", "Cheese", "Flour", "Sugar", "Butter", "Chocolate Chips"];
-let unlockedIngredients = ["Coffee Beans", "Bread"];
-
-let currentOrder = null;
-let selectedIngredients = [];
-let holding = null;
-
-let player = {
-  group: null,
-  speed: 5.2,
-  walk: 0
-};
-
-let customer = {
-  group: null,
-  active: false,
-  following: false,
-  seated: false,
-  tableIndex: null
-};
-
-let oven = {
-  item: null,
-  cooking: false,
-  ready: false,
-  burned: false,
-  cookTimer: 0,
-  burnTimer: 0,
-  burnMistakeCounted: false,
-  foodMesh: null
-};
-
-let prepGame = {
-  type: "",
-  marker: 0,
-  markerDir: 1,
-  fill: 0,
-  fillDir: 1,
-  hits: 0,
-  mixCount: 0,
-  lastMixKey: "",
-  placed: 0
-};
-
-let cutscene = {
-  active: false,
-  timer: 0,
-  mesh: null,
-  recipe: null
-};
-
-let heldMesh = null;
-
-const stationPositions = {
-  pantry: new THREE.Vector3(-8.5, 0, -3.2),
-  prep: new THREE.Vector3(-3.7, 0, -3.4),
-  oven: new THREE.Vector3(1.4, 0, -3.3),
-  trash: new THREE.Vector3(-8.5, 0, 4.3)
-};
-
-const tables = [
-  { pos: new THREE.Vector3(6.7, 0, -3.2), occupied: false },
-  { pos: new THREE.Vector3(7.1, 0, 2.0), occupied: false },
-  { pos: new THREE.Vector3(3.6, 0, 3.4), occupied: false }
-];
-
-init();
-startDay();
-animate();
-
-function init() {
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x2b211d);
-
-  camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
-
-  renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.shadowMap.enabled = true;
-  document.body.appendChild(renderer.domElement);
-
-  const ambient = new THREE.AmbientLight(0xffffff, 0.55);
-  scene.add(ambient);
-
-  const sun = new THREE.DirectionalLight(0xfff2d6, 1.2);
-  sun.position.set(5, 12, 8);
-  sun.castShadow = true;
-  sun.shadow.mapSize.width = 2048;
-  sun.shadow.mapSize.height = 2048;
-  scene.add(sun);
-
-  const warmLight = new THREE.PointLight(0xffc37a, 1.2, 20);
-  warmLight.position.set(0, 5, -2);
-  scene.add(warmLight);
-
-  createCafe();
-  createStations();
-  createTables();
-
-  player.group = createPlayer();
-  player.group.position.set(0, 0, 5.2);
-  scene.add(player.group);
-
-  customer.group = createCustomer();
-  scene.add(customer.group);
-
-  window.addEventListener("resize", onResize);
-}
-
-function createMat(color, roughness = 0.65, metalness = 0.05) {
-  return new THREE.MeshStandardMaterial({
-    color,
-    roughness,
-    metalness
-  });
-}
-
-function box(w, h, d, color, metalness = 0.05) {
-  const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(w, h, d),
-    createMat(color, 0.65, metalness)
-  );
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  return mesh;
-}
-
-function cylinder(radius, height, color) {
-  const mesh = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius, radius, height, 32),
-    createMat(color)
-  );
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  return mesh;
-}
-
-function createCafe() {
-  const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(22, 16),
-    createMat(0xb98b63)
-  );
-  floor.rotation.x = -Math.PI / 2;
-  floor.receiveShadow = true;
-  scene.add(floor);
-
-  const grid = new THREE.GridHelper(22, 22, 0x6b4634, 0x6b4634);
-  grid.position.y = 0.01;
-  scene.add(grid);
-
-  const backWall = box(22, 4, 0.35, 0x8b6b58);
-  backWall.position.set(0, 2, -8);
-  scene.add(backWall);
-
-  const leftWall = box(0.35, 4, 16, 0x7d5a4a);
-  leftWall.position.set(-11, 2, 0);
-  scene.add(leftWall);
-
-  const rightWall = box(0.35, 4, 16, 0x7d5a4a);
-  rightWall.position.set(11, 2, 0);
-  scene.add(rightWall);
-
-  const sign = box(4.8, 0.7, 0.2, 0x3a241b);
-  sign.position.set(0, 3.1, -7.78);
-  scene.add(sign);
-
-  const door = box(1.8, 3, 0.2, 0x4b2e23);
-  door.position.set(9.2, 1.5, 7.75);
-  scene.add(door);
-
-  const window1 = box(2.4, 1.4, 0.15, 0xa7d8f0);
-  window1.position.set(-7, 2.5, -7.75);
-  scene.add(window1);
-
-  const window2 = box(2.4, 1.4, 0.15, 0xa7d8f0);
-  window2.position.set(7, 2.5, -7.75);
-  scene.add(window2);
-}
-
-function createStations() {
-  createPantry();
-  createPrepStation();
-  createOvenStation();
-  createTrash();
-}
-
-function createPantry() {
-  const p = stationPositions.pantry;
-
-  const cabinet = box(2.5, 2.9, 0.9, 0x7a4a2a);
-  cabinet.position.set(p.x, 1.45, p.z);
-  scene.add(cabinet);
-
-  for (let i = 0; i < 3; i++) {
-    const shelf = box(2.35, 0.12, 0.95, 0x3b2416);
-    shelf.position.set(p.x, 0.75 + i * 0.75, p.z + 0.02);
-    scene.add(shelf);
-  }
-
-  const colors = [0x6f4e37, 0xd9a441, 0xe8f3ff, 0xffd166, 0xefe2ba, 0xc9184a];
-
-  for (let i = 0; i < 6; i++) {
-    const item = box(0.42, 0.45, 0.35, colors[i]);
-    item.position.set(p.x - 0.75 + (i % 3) * 0.75, 0.55 + Math.floor(i / 3) * 0.9, p.z + 0.5);
-    scene.add(item);
-  }
-}
-
-function createPrepStation() {
-  const p = stationPositions.prep;
-
-  const table = box(2.7, 0.35, 1.25, 0xb7b7a4, 0.25);
-  table.position.set(p.x, 1.05, p.z);
-  scene.add(table);
-
-  const leg1 = box(0.15, 1, 0.15, 0x555555, 0.4);
-  leg1.position.set(p.x - 1.1, 0.5, p.z - 0.45);
-  scene.add(leg1);
-
-  const leg2 = leg1.clone();
-  leg2.position.set(p.x + 1.1, 0.5, p.z - 0.45);
-  scene.add(leg2);
-
-  const board = box(1.2, 0.08, 0.65, 0x8b5e34);
-  board.position.set(p.x, 1.28, p.z);
-  scene.add(board);
-}
-
-function createOvenStation() {
-  const p = stationPositions.oven;
-
-  const ovenBody = box(2.5, 2.2, 1.2, 0xbfc5c9, 0.55);
-  ovenBody.position.set(p.x, 1.1, p.z);
-  scene.add(ovenBody);
-
-  const door = box(1.7, 0.85, 0.08, 0x1f2933, 0.2);
-  door.position.set(p.x, 0.9, p.z + 0.62);
-  scene.add(door);
-
-  for (let i = 0; i < 4; i++) {
-    const burner = cylinder(0.28, 0.05, 0x111111);
-    burner.position.set(p.x - 0.65 + (i % 2) * 1.3, 2.23, p.z - 0.25 + Math.floor(i / 2) * 0.55);
-    scene.add(burner);
-  }
-}
-
-function createTrash() {
-  const p = stationPositions.trash;
-
-  const trash = box(0.9, 1.2, 0.9, 0x495057, 0.25);
-  trash.position.set(p.x, 0.6, p.z);
-  scene.add(trash);
-
-  const lid = box(1.05, 0.15, 1.05, 0x212529, 0.25);
-  lid.position.set(p.x, 1.25, p.z);
-  scene.add(lid);
-}
-
-function createTables() {
-  tables.forEach(t => {
-    const top = cylinder(0.8, 0.18, 0x7f5539);
-    top.position.set(t.pos.x, 0.85, t.pos.z);
-    scene.add(top);
-
-    const pole = cylinder(0.12, 0.85, 0x3a241b);
-    pole.position.set(t.pos.x, 0.4, t.pos.z);
-    scene.add(pole);
-
-    const chairOffsets = [
-      new THREE.Vector3(1.2, 0, 0),
-      new THREE.Vector3(-1.2, 0, 0),
-      new THREE.Vector3(0, 0, 1.2)
-    ];
-
-    chairOffsets.forEach(o => {
-      const chair = box(0.55, 0.35, 0.55, 0x5e3023);
-      chair.position.set(t.pos.x + o.x, 0.35, t.pos.z + o.z);
-      scene.add(chair);
-
-      const back = box(0.55, 0.75, 0.12, 0x4e2f1f);
-      back.position.set(t.pos.x + o.x, 0.8, t.pos.z + o.z + 0.25);
-      scene.add(back);
-    });
-  });
-}
-
-function createPlayer() {
-  const g = new THREE.Group();
-
-  const body = box(0.55, 0.75, 0.35, 0x203040);
-  body.position.y = 1.15;
-  g.add(body);
-
-  const apron = box(0.38, 0.62, 0.38, 0xf1f1ea);
-  apron.position.set(0, 1.1, 0.02);
-  g.add(apron);
-
-  const head = box(0.48, 0.48, 0.48, 0xdba776);
-  head.position.y = 1.8;
-  g.add(head);
-
-  const hair = box(0.52, 0.18, 0.52, 0x3a241b);
-  hair.position.y = 2.1;
-  g.add(hair);
-
-  const arm1 = box(0.16, 0.65, 0.16, 0xdba776);
-  arm1.position.set(-0.42, 1.15, 0);
-  g.add(arm1);
-
-  const arm2 = arm1.clone();
-  arm2.position.x = 0.42;
-  g.add(arm2);
-
-  const leg1 = box(0.18, 0.65, 0.18, 0x1f1f1f);
-  leg1.position.set(-0.16, 0.35, 0);
-  g.add(leg1);
-
-  const leg2 = leg1.clone();
-  leg2.position.x = 0.16;
-  g.add(leg2);
-
-  return g;
-}
-
-function createCustomer() {
-  const g = new THREE.Group();
-
-  const body = box(0.5, 0.7, 0.35, 0x345995);
-  body.position.y = 1.05;
-  g.add(body);
-
-  const head = box(0.45, 0.45, 0.45, 0xe7b98d);
-  head.position.y = 1.65;
-  g.add(head);
-
-  const hair = box(0.5, 0.18, 0.5, 0x3a241b);
-  hair.position.y = 1.94;
-  g.add(hair);
-
-  g.visible = false;
-  return g;
-}
-
-function startDay() {
-  state = "playing";
-  ordersDone = 0;
-  mistakes = 0;
-  ordersNeeded = Math.min(3 + Math.floor(day / 2), 8);
-
-  currentOrder = null;
-  holding = null;
-  selectedIngredients = [];
-  clearHeldMesh();
-
-  tables.forEach(t => t.occupied = false);
-  resetOven();
-
-  player.group.position.set(0, 0, 5.2);
-  newCustomer();
-
-  hideMenus();
-  updateHUD();
-}
-
-function newCustomer() {
-  customer.active = true;
-  customer.following = false;
-  customer.seated = false;
-  customer.tableIndex = null;
-  customer.group.visible = true;
-  customer.group.position.set(9.1, 0, 6.2);
-
-  currentOrder = null;
-  holding = null;
-  clearHeldMesh();
-
-  message = "A customer arrived. Walk to them and press E.";
-}
-
-function createOrder() {
-  const pool = recipes.filter(r => r.ingredients.every(i => unlockedIngredients.includes(i)));
-  const recipe = pool[Math.floor(Math.random() * pool.length)];
-
-  const timeLimit = Math.max(13, recipe.timeLimit - Math.floor(day / 2));
-
-  currentOrder = {
-    recipe,
-    timeLeft: timeLimit,
-    maxTime: timeLimit
-  };
-
-  message = "Order received: " + recipe.name + ". Check the order box.";
-}
-
-function resetOven() {
-  if (oven.foodMesh) {
-    scene.remove(oven.foodMesh);
-  }
-
-  oven = {
-    item: null,
-    cooking: false,
-    ready: false,
-    burned: false,
-    cookTimer: 0,
-    burnTimer: 0,
-    burnMistakeCounted: false,
-    foodMesh: null
-  };
-}
-
-function interact() {
-  if (state !== "playing") return;
-
-  const playerPos = player.group.position;
-
-  if (customer.active && !customer.following && !customer.seated) {
-    if (playerPos.distanceTo(customer.group.position) < 1.8) {
-      customer.following = true;
-      message = "Lead the customer to an empty table, then press E.";
-      return;
-    }
-  }
-
-  if (customer.active && customer.following) {
-    for (let i = 0; i < tables.length; i++) {
-      if (!tables[i].occupied && playerPos.distanceTo(tables[i].pos) < 1.6) {
-        seatCustomer(i);
-        return;
-      }
-    }
-  }
-
-  if (nearStation("pantry")) {
-    openPantry();
-    return;
-  }
-
-  if (nearStation("prep")) {
-    openPrep();
-    return;
-  }
-
-  if (nearStation("oven")) {
-    useOven();
-    return;
-  }
-
-  if (nearStation("trash")) {
-    useTrash();
-    return;
-  }
-
-  if (customer.active && customer.seated && currentOrder) {
-    const table = tables[customer.tableIndex];
-    if (playerPos.distanceTo(table.pos) < 1.7) {
-      serveTable();
-      return;
-    }
-  }
-
-  message = "Move closer to a customer, table, or station.";
-}
-
-function nearStation(name) {
-  return player.group.position.distanceTo(stationPositions[name]) < 1.7;
-}
-
-function seatCustomer(index) {
-  const table = tables[index];
-
-  table.occupied = true;
-  customer.following = false;
-  customer.seated = true;
-  customer.tableIndex = index;
-  customer.group.position.set(table.pos.x, 0, table.pos.z - 1.05);
-
-  createOrder();
-}
-
-function openPantry() {
-  if (!customer.seated || !currentOrder) {
-    message = "Seat the customer before choosing ingredients.";
-    return;
-  }
-
-  if (holding) {
-    message = "Your hands are already full.";
-    return;
-  }
-
-  selectedIngredients = [];
-  state = "pantry";
-  document.getElementById("neededText").textContent =
-    "Needed: " + currentOrder.recipe.ingredients.join(", ");
-
-  const box = document.getElementById("ingredientButtons");
-  box.innerHTML = "";
-
-  unlockedIngredients.forEach(item => {
-    const btn = document.createElement("button");
-    btn.textContent = item;
-    btn.onclick = () => {
-      if (selectedIngredients.includes(item)) {
-        selectedIngredients = selectedIngredients.filter(i => i !== item);
-        btn.classList.remove("selected");
-      } else {
-        selectedIngredients.push(item);
-        btn.classList.add("selected");
-      }
-    };
-    box.appendChild(btn);
-  });
-
-  document.getElementById("pantryModal").style.display = "flex";
-}
-
-function closePantry() {
-  state = "playing";
-  document.getElementById("pantryModal").style.display = "none";
-  message = "Pantry cancelled.";
-}
-
-function finishPantry() {
-  const needed = [...currentOrder.recipe.ingredients].sort();
-  const chosen = [...selectedIngredients].sort();
-
-  const correct =
-    needed.length === chosen.length &&
-    needed.every((item, i) => item === chosen[i]);
-
-  if (!correct) {
-    mistakes++;
-    closePantry();
-    message = "Wrong ingredients. Mistake counted.";
-    return;
-  }
-
-  holding = {
-    type: "ingredients",
-    recipe: currentOrder.recipe,
-    ingredients: [...selectedIngredients],
-    burned: false
-  };
-
-  createHeldMesh("ingredients");
-  closePantry();
-  message = "Ingredients collected. Go to the prep station.";
-}
-
-function openPrep() {
-  if (!customer.seated || !currentOrder) {
-    message = "Seat the customer first.";
-    return;
-  }
-
-  if (!holding || holding.type !== "ingredients") {
-    message = "Get the correct ingredients from the pantry first.";
-    return;
-  }
-
-  state = "prep";
-
-  prepGame = {
-    type: currentOrder.recipe.prepTask,
-    marker: 0,
-    markerDir: 1,
-    fill: 0,
-    fillDir: 1,
-    hits: 0,
-    mixCount: 0,
-    lastMixKey: "",
-    placed: 0
-  };
-
-  showPrepScreen();
-}
-
-function showPrepScreen() {
-  const content = document.getElementById("prepContent");
-  const type = prepGame.type;
-
-  if (type === "cutting") {
-    content.innerHTML = `
-      <p>Cutting minigame: press SPACE when the red marker is inside the green zone.</p>
-      <div class="prepBar">
-        <div class="greenZone"></div>
-        <div id="cutMarker" class="marker"></div>
-      </div>
-      <h3 id="prepProgress">Good cuts: 0/3</h3>
-      <p>Press Escape to cancel.</p>
-    `;
-  }
-
-  if (type === "mixing") {
-    content.innerHTML = `
-      <p>Mixing minigame: alternate pressing A and D.</p>
-      <h1>🥣</h1>
-      <h3 id="prepProgress">Mixing: 0/10</h3>
-      <p>Press Escape to cancel.</p>
-    `;
-  }
-
-  if (type === "measuring") {
-    content.innerHTML = `
-      <p>Measuring minigame: press SPACE when the blue liquid is in the green target zone.</p>
-      <div class="measureCup">
-        <div class="measureTarget"></div>
-        <div id="measureFill" class="measureFill"></div>
-      </div>
-      <p>Press Escape to cancel.</p>
-    `;
-  }
-
-  if (type === "tray") {
-    content.innerHTML = `
-      <p>Cookie tray minigame: press SPACE or click the button to place 6 cookies.</p>
-      <h1>🍪</h1>
-      <h3 id="prepProgress">Cookies placed: 0/6</h3>
-      <button class="main" onclick="placeCookie()">Place Cookie</button>
-      <p>Press Escape to cancel.</p>
-    `;
-  }
-
-  document.getElementById("prepModal").style.display = "flex";
-}
-
-function cancelPrep() {
-  state = "playing";
-  document.getElementById("prepModal").style.display = "none";
-  message = "Prep cancelled.";
-}
-
-function handlePrepKey(key) {
-  if (key === "escape") {
-    cancelPrep();
-    return;
-  }
-
-  if (prepGame.type === "cutting" && key === " ") {
-    if (prepGame.marker >= 0.42 && prepGame.marker <= 0.58) {
-      prepGame.hits++;
-      document.getElementById("prepProgress").textContent = "Good cuts: " + prepGame.hits + "/3";
-
-      if (prepGame.hits >= 3) {
-        finishPrep();
-      }
-    } else {
-      mistakes++;
-      message = "Bad cut. Mistake counted.";
-    }
-  }
-
-  if (prepGame.type === "measuring" && key === " ") {
-    if (prepGame.fill >= 0.55 && prepGame.fill <= 0.72) {
-      finishPrep();
-    } else {
-      mistakes++;
-      message = "Wrong measurement. Mistake counted.";
-    }
-  }
-
-  if (prepGame.type === "mixing") {
-    if (key !== "a" && key !== "d") return;
-
-    if (prepGame.lastMixKey === "" || key !== prepGame.lastMixKey) {
-      prepGame.lastMixKey = key;
-      prepGame.mixCount++;
-      document.getElementById("prepProgress").textContent = "Mixing: " + prepGame.mixCount + "/10";
-
-      if (prepGame.mixCount >= 10) {
-        finishPrep();
-      }
-    }
-  }
-
-  if (prepGame.type === "tray" && key === " ") {
-    placeCookie();
-  }
-}
-
-function placeCookie() {
-  if (state !== "prep") return;
-
-  prepGame.placed++;
-  document.getElementById("prepProgress").textContent = "Cookies placed: " + prepGame.placed + "/6";
-
-  if (prepGame.placed >= 6) {
-    finishPrep();
-  }
-}
-
-function finishPrep() {
-  document.getElementById("prepModal").style.display = "none";
-
-  if (currentOrder.recipe.needsOven) {
-    holding = {
-      type: "rawFood",
-      recipe: currentOrder.recipe,
-      burned: false
-    };
-    createHeldMesh("rawFood");
-    message = "Prep finished. Put the food in the oven.";
-  } else {
-    holding = {
-      type: "cookedFood",
-      recipe: currentOrder.recipe,
-      burned: false
-    };
-    createHeldMesh("cookedFood");
-    message = "Prep finished. Serve it to the table.";
-  }
-
-  state = "playing";
-}
-
-function useOven() {
-  if (!customer.seated || !currentOrder) {
-    message = "Seat the customer first.";
-    return;
-  }
-
-  if (holding && holding.type === "rawFood") {
-    if (oven.item) {
-      message = "The oven is already full.";
-      return;
-    }
-
-    startOvenCutscene(holding.recipe);
-    holding = null;
-    clearHeldMesh();
-    return;
-  }
-
-  if (!holding && oven.item && (oven.ready || oven.burned)) {
-    holding = {
-      type: "cookedFood",
-      recipe: oven.item,
-      burned: oven.burned
-    };
-
-    createHeldMesh("cookedFood");
-
-    if (oven.burned) {
-      message = "You picked up burned food. Trash it, don't serve it!";
-    } else {
-      message = "Food is ready. Serve it to the customer.";
-    }
-
-    if (oven.foodMesh) {
-      scene.remove(oven.foodMesh);
-      oven.foodMesh = null;
-    }
-
-    oven.item = null;
-    oven.cooking = false;
-    oven.ready = false;
-    oven.burned = false;
-    oven.cookTimer = 0;
-    oven.burnTimer = 0;
-    return;
-  }
-
-  if (oven.item && oven.cooking) {
-    message = "Still cooking.";
-    return;
-  }
-
-  message = "Nothing to do at the oven.";
-}
-
-function startOvenCutscene(recipe) {
-  state = "cutscene";
-  cutscene.active = true;
-  cutscene.timer = 0;
-  cutscene.recipe = recipe;
-
-  cutscene.mesh = box(0.9, 0.18, 0.55, 0xd9a441);
-  cutscene.mesh.position.copy(player.group.position);
-  cutscene.mesh.position.y = 1.6;
-  scene.add(cutscene.mesh);
-
-  message = "Putting food into the oven...";
-}
-
-function beginCooking(recipe) {
-  oven.item = recipe;
-  oven.cooking = true;
-  oven.ready = false;
-  oven.burned = false;
-  oven.cookTimer = 0;
-  oven.burnTimer = 0;
-  oven.burnMistakeCounted = false;
-
-  oven.foodMesh = box(0.8, 0.16, 0.5, 0xe85d04);
-  oven.foodMesh.position.set(stationPositions.oven.x, 0.9, stationPositions.oven.z + 0.7);
-  scene.add(oven.foodMesh);
-
-  state = "playing";
-  message = recipe.name + " is cooking. Watch the oven!";
-}
-
-function serveTable() {
-  if (!holding) {
-    message = "Bring the finished food to the table.";
-    return;
-  }
-
-  if (holding.type !== "cookedFood") {
-    firePlayer("You served food before it was ready.");
-    return;
-  }
-
-  if (holding.burned) {
-    firePlayer("You served burned food.");
-    return;
-  }
-
-  if (holding.recipe.name !== currentOrder.recipe.name) {
-    firePlayer("You served the wrong order.");
-    return;
-  }
-
-  if (currentOrder.timeLeft <= 0) {
-    firePlayer("The order was served late.");
-    return;
-  }
-
-  ordersDone++;
-
-  tables[customer.tableIndex].occupied = false;
-  customer.active = false;
-  customer.following = false;
-  customer.seated = false;
-  customer.tableIndex = null;
-  customer.group.visible = false;
-
-  currentOrder = null;
-  holding = null;
-  clearHeldMesh();
-
-  message = "Order served successfully.";
-
-  if (ordersDone >= ordersNeeded) {
-    completeDay();
-  } else {
-    setTimeout(() => {
-      if (state === "playing") newCustomer();
-    }, 900);
-  }
-}
-
-function useTrash() {
-  if (!holding) {
-    message = "Nothing to throw away.";
-    return;
-  }
-
-  holding = null;
-  clearHeldMesh();
-  mistakes++;
-  message = "Thrown away. Mistake counted.";
-}
-
-function completeDay() {
-  state = "dayclear";
-
-  if (mistakes === 0) {
-    if (ingredientUnlocks.length > 0) {
-      const item = ingredientUnlocks.shift();
-      unlockedIngredients.push(item);
-      unlockMessage = "Perfect day! You unlocked: " + item;
-    } else {
-      unlockMessage = "Perfect day! Everything is unlocked.";
-    }
-  } else {
-    unlockMessage = "Day finished, but no unlock because you made mistakes.";
-  }
-
-  document.getElementById("unlockText").textContent = unlockMessage;
-  document.getElementById("dayClear").style.display = "flex";
-}
-
-function firePlayer(reason) {
-  state = "fired";
-  firedReason = reason;
-  document.getElementById("firedReason").textContent = reason;
-  document.getElementById("survivedText").textContent = "You survived to Day " + day;
-  document.getElementById("gameOver").style.display = "flex";
-}
-
-function restartGame() {
-  day = 1;
-  unlockedIngredients = ["Coffee Beans", "Bread"];
-  ingredientUnlocks = ["Milk", "Cheese", "Flour", "Sugar", "Butter", "Chocolate Chips"];
-
-  document.getElementById("gameOver").style.display = "none";
-  document.getElementById("dayClear").style.display = "none";
-
-  startDay();
-}
-
-function hideMenus() {
-  document.getElementById("pantryModal").style.display = "none";
-  document.getElementById("prepModal").style.display = "none";
-  document.getElementById("gameOver").style.display = "none";
-  document.getElementById("dayClear").style.display = "none";
-}
-
-function createHeldMesh(type) {
-  clearHeldMesh();
-
-  if (type === "ingredients") {
-    heldMesh = box(0.75, 0.42, 0.5, 0x8a5a35);
-  }
-
-  if (type === "rawFood") {
-    heldMesh = box(0.8, 0.16, 0.5, 0xe9c46a);
-  }
-
-  if (type === "cookedFood") {
-    const color = holding.burned ? 0x111111 : 0xd9a441;
-    heldMesh = box(0.75, 0.16, 0.5, color);
-  }
-
-  heldMesh.position.set(0, 2.45, 0);
-  player.group.add(heldMesh);
-}
-
-function clearHeldMesh() {
-  if (heldMesh) {
-    player.group.remove(heldMesh);
-    heldMesh = null;
-  }
-}
-
-function update(dt) {
-  if (state === "playing") {
-    updatePlayer(dt);
-    updateCustomer(dt);
-    updateOrderTimer(dt);
-    updateOven(dt);
-  }
-
-  if (state === "prep") {
-    updatePrep(dt);
-  }
-
-  if (state === "cutscene") {
-    updateCutscene(dt);
-  }
-
-  updateCamera();
-  updateHUD();
-}
-
-function updatePlayer(dt) {
-  let dx = 0;
-  let dz = 0;
-
-  if (keys["w"] || keys["arrowup"]) dz -= 1;
-  if (keys["s"] || keys["arrowdown"]) dz += 1;
-  if (keys["a"] || keys["arrowleft"]) dx -= 1;
-  if (keys["d"] || keys["arrowright"]) dx += 1;
-
-  const len = Math.hypot(dx, dz);
-
-  if (len > 0) {
-    dx /= len;
-    dz /= len;
-
-    player.group.position.x += dx * player.speed * dt;
-    player.group.position.z += dz * player.speed * dt;
-
-    player.walk += dt * 10;
-    player.group.rotation.y = Math.atan2(dx, dz);
-  }
-
-  player.group.position.x = Math.max(-10, Math.min(10, player.group.position.x));
-  player.group.position.z = Math.max(-7, Math.min(7, player.group.position.z));
-}
-
-function updateCustomer(dt) {
-  if (!customer.active || !customer.following) return;
-
-  const target = player.group.position.clone();
-  target.x -= 0.9;
-  target.z += 0.5;
-
-  const current = customer.group.position;
-  const dir = target.clone().sub(current);
-  const d = dir.length();
-
-  if (d > 0.15) {
-    dir.normalize();
-    current.add(dir.multiplyScalar(3.3 * dt));
-    customer.group.rotation.y = Math.atan2(dir.x, dir.z);
-  }
-}
-
-function updateOrderTimer(dt) {
-  if (!currentOrder || !customer.seated) return;
-
-  currentOrder.timeLeft -= dt;
-
-  if (currentOrder.timeLeft <= 0) {
-    currentOrder.timeLeft = 0;
-    firePlayer("The customer waited too long.");
-  }
-}
-
-function updateOven(dt) {
-  if (!oven.item) return;
-
-  if (oven.cooking) {
-    oven.cookTimer += dt;
-
-    if (oven.foodMesh) {
-      oven.foodMesh.material.color.set(0xe85d04);
-    }
-
-    if (oven.cookTimer >= oven.item.cookTime) {
-      oven.cooking = false;
-      oven.ready = true;
-      oven.cookTimer = oven.item.cookTime;
-      message = oven.item.name + " is ready! Take it out before it burns.";
-
-      if (oven.foodMesh) {
-        oven.foodMesh.material.color.set(0xf6c453);
-      }
-    }
-  } else if (oven.ready) {
-    oven.burnTimer += dt;
-
-    if (oven.burnTimer >= oven.item.burnTime) {
-      oven.ready = false;
-      oven.burned = true;
-
-      if (!oven.burnMistakeCounted) {
-        mistakes++;
-        oven.burnMistakeCounted = true;
-      }
-
-      if (oven.foodMesh) {
-        oven.foodMesh.material.color.set(0x111111);
-      }
-
-      message = oven.item.name + " burned! Trash it and remake it.";
-    }
-  }
-}
-
-function updatePrep(dt) {
-  if (prepGame.type === "cutting") {
-    prepGame.marker += prepGame.markerDir * dt * 1.25;
-
-    if (prepGame.marker >= 1) {
-      prepGame.marker = 1;
-      prepGame.markerDir = -1;
-    }
-
-    if (prepGame.marker <= 0) {
-      prepGame.marker = 0;
-      prepGame.markerDir = 1;
-    }
-
-    const marker = document.getElementById("cutMarker");
-    if (marker) {
-      marker.style.left = (prepGame.marker * 100) + "%";
-    }
-  }
-
-  if (prepGame.type === "measuring") {
-    prepGame.fill += prepGame.fillDir * dt * 0.75;
-
-    if (prepGame.fill >= 1) {
-      prepGame.fill = 1;
-      prepGame.fillDir = -1;
-    }
-
-    if (prepGame.fill <= 0) {
-      prepGame.fill = 0;
-      prepGame.fillDir = 1;
-    }
-
-    const fill = document.getElementById("measureFill");
-    if (fill) {
-      fill.style.height = (prepGame.fill * 100) + "%";
-    }
-  }
-}
-
-function updateCutscene(dt) {
-  cutscene.timer += dt;
-
-  const start = player.group.position.clone();
-  start.y = 1.6;
-
-  const end = stationPositions.oven.clone();
-  end.y = 1.1;
-  end.z += 0.75;
-
-  const t = Math.min(1, cutscene.timer / 1.7);
-
-  if (cutscene.mesh) {
-    cutscene.mesh.position.lerpVectors(start, end, t);
-    cutscene.mesh.rotation.y += dt * 4;
-  }
-
-  if (t >= 1) {
-    if (cutscene.mesh) {
-      scene.remove(cutscene.mesh);
-      cutscene.mesh = null;
-    }
-
-    beginCooking(cutscene.recipe);
-  }
-}
-
-function updateCamera() {
-  const p = player.group.position;
-
-  camera.position.lerp(
-    new THREE.Vector3(p.x, p.y + 8.5, p.z + 9.5),
-    0.08
-  );
-
-  camera.lookAt(p.x, p.y + 1, p.z);
-}
-
-function updateHUD() {
-  document.getElementById("dayText").textContent =
-    "Day " + day + " | Orders " + ordersDone + "/" + ordersNeeded + " | Mistakes " + mistakes;
-
-  document.getElementById("holdingText").textContent =
-    "Holding: " + getHoldingText();
-
-  document.getElementById("ovenText").textContent =
-    "Oven: " + getOvenText();
-
-  const orderText = document.getElementById("orderText");
-
-  if (currentOrder) {
-    orderText.innerHTML =
-      "<b>" + currentOrder.recipe.name + "</b><br>" +
-      "Ingredients: " + currentOrder.recipe.ingredients.join(", ");
-
-    const pct = currentOrder.timeLeft / currentOrder.maxTime;
-    const bar = document.getElementById("timerBarInner");
-    bar.style.width = Math.max(0, pct * 100) + "%";
-
-    if (pct > 0.5) bar.style.background = "#57cc99";
-    else if (pct > 0.25) bar.style.background = "#ffd166";
-    else bar.style.background = "#ef476f";
-  } else {
-    orderText.textContent = "Seat a customer to get an order.";
-    document.getElementById("timerBarInner").style.width = "0%";
-  }
-
-  document.getElementById("message").textContent = message;
-}
-
-function getHoldingText() {
-  if (!holding) return "Nothing";
-  if (holding.type === "ingredients") return "Ingredients";
-  if (holding.type === "rawFood") return "Raw " + holding.recipe.name;
-  if (holding.type === "cookedFood") {
-    return holding.burned ? "Burned " + holding.recipe.name : holding.recipe.name;
-  }
-  return "Something";
-}
-
-function getOvenText() {
-  if (!oven.item) return "Empty";
-
-  if (oven.cooking) {
-    return "Cooking " + oven.item.name + " " + oven.cookTimer.toFixed(1) + "/" + oven.item.cookTime;
-  }
-
-  if (oven.ready) {
-    const left = Math.max(0, oven.item.burnTime - oven.burnTimer);
-    return oven.item.name + " ready, burns in " + left.toFixed(1);
-  }
-
-  if (oven.burned) return "Burned " + oven.item.name;
-
-  return "Busy";
-}
-
-function animate() {
-  requestAnimationFrame(animate);
-  const dt = Math.min(0.04, clock.getDelta());
-  update(dt);
-  renderer.render(scene, camera);
-}
-
-function onResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-window.addEventListener("keydown", e => {
-  const key = e.key.toLowerCase();
-  keys[key] = true;
-
-  if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) {
-    e.preventDefault();
-  }
-
-  if (state === "prep") {
-    handlePrepKey(key);
-    return;
-  }
-
-  if (state === "pantry") {
-    if (key === "escape") closePantry();
-    return;
-  }
-
-  if (state === "playing" && !e.repeat && (key === "e" || key === " ")) {
-    interact();
-  }
-
-  if (state === "dayclear" && !e.repeat && (key === "enter" || key === " ")) {
-    day++;
-    document.getElementById("dayClear").style.display = "none";
-    startDay();
-  }
-
-  if (state === "fired" && !e.repeat && key === "r") {
-    restartGame();
-  }
-});
-
-window.addEventListener("keyup", e => {
-  keys[e.key.toLowerCase()] = false;
-});
-</script>
-
+  <!-- decorative floating treats -->
+  <div class="sprinkle" style="top:12%; left:8%;  animation-delay:0s;">🧁</div>
+  <div class="sprinkle" style="top:22%; left:85%; animation-delay:1.2s;">🍪</div>
+  <div class="sprinkle" style="top:65%; left:12%; animation-delay:2.1s;">🥐</div>
+  <div class="sprinkle" style="top:74%; left:80%; animation-delay:0.6s;">🎂</div>
+  <div class="sprinkle" style="top:45%; left:50%; animation-delay:3s;">🍩</div>
+  <div class="sprinkle" style="top:8%;  left:48%; animation-delay:1.8s;">🥖</div>
+
+  <main class="welcome">
+    <h1 class="logo">BAKERY BOSS</h1>
+    <p class="tagline">Pick your kitchen and start cooking!</p>
+
+    <div class="cards">
+      <a class="card" href="arun.html">
+        <span class="emoji">😤</span>
+        <h2>Arun's Game</h2>
+        <div class="sub">Baking Rage!</div>
+        <div class="desc">
+          A fast 2D arcade kitchen. Grab ingredients, follow the recipe,
+          and serve cakes before the chef's rage boils over.
+        </div>
+        <span class="badge arun">2D · Arcade</span>
+      </a>
+
+      <a class="card" href="emma.html">
+        <span class="emoji">☕</span>
+        <h2>Emma's Game</h2>
+        <div class="sub">3D Cafe Rush</div>
+        <div class="desc">
+          A 3D cafe sim. Seat customers, prep with minigames, cook in the
+          oven, and survive the day without getting fired.
+        </div>
+        <span class="badge emma">3D · Simulation</span>
+      </a>
+    </div>
+  </main>
+
+  <footer>Bakery Boss &middot; choose a game above to play</footer>
 </body>
 </html>
-
