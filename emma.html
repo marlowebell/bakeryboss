@@ -1,676 +1,743 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>3D Cafe Rush - Karen Rage Update</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Cafe Rush — Karen's Bakery</title>
   <style>
-    body {
-      margin: 0;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
       overflow: hidden;
-      background: #1f1714;
-      font-family: Arial, sans-serif;
-      color: white;
+      background: #1b120c;
+      font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+      color: #fff5e6;
+      user-select: none;
+    }
+
+    canvas { display: block; }
+
+    /* ---------- HUD ---------- */
+    #topBar {
+      position: fixed;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+      pointer-events: none;
+    }
+
+    .pill {
+      background: rgba(28, 18, 12, 0.78);
+      border: 1.5px solid rgba(255, 210, 150, 0.35);
+      border-radius: 14px;
+      padding: 8px 16px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+      text-align: center;
+      min-width: 92px;
+    }
+    .pill .label {
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #ffd9a0;
+      opacity: 0.8;
+    }
+    .pill .value {
+      font-size: 22px;
+      font-weight: 900;
+      line-height: 1.1;
+      color: #fff5e6;
+    }
+    .pill .value.money { color: #9ae6b4; }
+
+    /* ---------- Order ticket ---------- */
+    #orderBox {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 5;
+      width: 280px;
+      background: linear-gradient(180deg, #fff8ec 0%, #ffeccd 100%);
+      color: #2b1a12;
+      border-radius: 14px;
+      padding: 14px 16px 16px;
+      box-shadow: 0 14px 36px rgba(0,0,0,0.5);
+      border: 2px solid #e6c79a;
+    }
+    #orderBox::before {
+      content: "🧾 ORDER TICKET";
+      display: block;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: #a8744a;
+      border-bottom: 2px dashed #d8b98c;
+      padding-bottom: 7px;
+      margin-bottom: 8px;
+    }
+    #orderName { font-size: 22px; font-weight: 900; }
+    #orderIngredients { font-size: 13px; margin-top: 3px; opacity: 0.8; line-height: 1.35; }
+    #orderSteps { font-size: 12px; margin-top: 8px; line-height: 1.5; }
+    #orderSteps .step { opacity: 0.45; transition: opacity 0.2s, color 0.2s; }
+    #orderSteps .step.done { opacity: 1; color: #2a9d5c; font-weight: bold; }
+    #orderSteps .step.done::before { content: "✓ "; }
+    #orderSteps .step.todo::before { content: "○ "; }
+    #timerBarOuter {
+      width: 100%; height: 10px; background: #e3cba6;
+      border-radius: 6px; overflow: hidden; margin-top: 12px;
+    }
+    #timerBarInner { height: 100%; width: 0%; background: #2a9d5c; transition: width 0.15s linear; }
+    #orderEmpty { font-size: 14px; opacity: 0.7; padding: 6px 0; }
+
+    /* ---------- Karen rage ---------- */
+    #rageBox {
+      position: fixed;
+      bottom: 16px;
+      right: 14px;
+      z-index: 5;
+      width: 280px;
+      background: rgba(28, 18, 12, 0.82);
+      border: 1.5px solid rgba(255, 120, 120, 0.4);
+      border-radius: 14px;
+      padding: 12px 16px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+      backdrop-filter: blur(6px);
+    }
+    #rageBox b { color: #ffb3b3; font-size: 14px; }
+    #rageOuter {
+      width: 100%; height: 18px; background: #3b241b;
+      border-radius: 10px; overflow: hidden; margin-top: 8px;
+      border: 2px solid #ffd2a0;
+    }
+    #rageInner {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #ffd166, #ef476f 60%, #b00020);
+      transition: width 0.3s ease;
+    }
+    #rageText { margin-top: 6px; font-size: 13px; color: #ffd9a0; }
+    #rageFaces { font-size: 16px; letter-spacing: 4px; margin-top: 2px; }
+
+    /* ---------- Controls hint ---------- */
+    #controls {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      z-index: 5;
+      background: rgba(28, 18, 12, 0.7);
+      border: 1px solid rgba(255, 210, 150, 0.25);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 13px;
+      line-height: 1.6;
+      backdrop-filter: blur(6px);
+      max-width: 260px;
+    }
+    #controls b { color: #ffd166; }
+    #controls .key {
+      display: inline-block;
+      background: #3a2418;
+      border: 1px solid #6b4634;
+      border-radius: 5px;
+      padding: 0 6px;
+      font-weight: bold;
+      color: #ffe8c4;
+      min-width: 18px;
+      text-align: center;
     }
 
     #backLink {
       position: fixed;
-      bottom: 18px;
-      left: 18px;
+      top: 14px;
+      left: 14px;
       z-index: 6;
       color: #ffd9a0;
       text-decoration: none;
-      font-size: 15px;
+      font-size: 14px;
       padding: 8px 14px;
-      background: rgba(20, 12, 8, 0.82);
-      border: 1px solid rgba(255, 210, 150, 0.35);
-      border-radius: 10px;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.35);
-      transition: background 0.15s, border-color 0.15s;
-    }
-    #backLink:hover { background: rgba(255, 210, 150, 0.18); border-color: rgba(255,210,150,0.7); }
-
-    #hud {
-      position: fixed;
-      top: 12px;
-      left: 12px;
-      background: rgba(20, 12, 8, 0.82);
-      padding: 12px 16px;
+      background: rgba(28, 18, 12, 0.78);
+      border: 1.5px solid rgba(255, 210, 150, 0.35);
       border-radius: 12px;
-      width: 350px;
-      line-height: 1.45;
       box-shadow: 0 8px 25px rgba(0,0,0,0.35);
-      z-index: 5;
+      backdrop-filter: blur(6px);
+      transition: background 0.15s, border-color 0.15s, transform 0.15s;
     }
+    #backLink:hover { background: rgba(255, 210, 150, 0.2); transform: translateY(-2px); }
 
-    #orderBox {
-      position: fixed;
-      top: 12px;
-      right: 12px;
-      background: rgba(20, 12, 8, 0.82);
-      padding: 12px 16px;
-      border-radius: 12px;
-      width: 360px;
-      line-height: 1.45;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.35);
-      z-index: 5;
-    }
-
-    #rageBox {
-      position: fixed;
-      top: 150px;
-      right: 12px;
-      background: rgba(20, 12, 8, 0.82);
-      padding: 12px 16px;
-      border-radius: 12px;
-      width: 360px;
-      line-height: 1.45;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.35);
-      z-index: 5;
-    }
-
-    #rageOuter {
-      width: 100%;
-      height: 20px;
-      background: #3b241b;
-      border-radius: 12px;
-      overflow: hidden;
-      margin-top: 8px;
-      border: 2px solid #fff0c2;
-    }
-
-    #rageInner {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #ffd166, #ef476f, #b00020);
-      transition: width 0.25s;
-    }
-
-    #rageText {
-      margin-top: 6px;
-      color: #fff0c2;
-    }
-
+    /* ---------- Coach message ---------- */
     #message {
       position: fixed;
-      bottom: 18px;
+      bottom: 78px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(255, 239, 204, 0.95);
+      background: rgba(255, 244, 224, 0.96);
       color: #2b1a12;
-      padding: 12px 22px;
-      border-radius: 14px;
-      font-size: 18px;
-      min-width: 430px;
+      padding: 11px 24px;
+      border-radius: 999px;
+      font-size: 16px;
+      font-weight: bold;
       text-align: center;
       z-index: 5;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      max-width: 80vw;
+      transition: transform 0.15s;
     }
 
+    /* ---------- Karen speech ---------- */
     #karenSpeech {
       position: fixed;
-      top: 42%;
+      top: 38%;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%) rotate(-3deg);
       background: white;
       color: #b00020;
-      padding: 18px 30px;
+      padding: 20px 34px;
       border-radius: 18px;
-      font-size: 36px;
-      font-weight: bold;
-      border: 5px solid #b00020;
+      font-size: 46px;
+      font-weight: 900;
+      border: 6px solid #b00020;
       display: none;
       z-index: 30;
-      box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+      box-shadow: 0 18px 50px rgba(0,0,0,0.55);
+      animation: shake 0.18s infinite;
+    }
+    @keyframes shake {
+      0%,100% { transform: translate(-50%,-50%) rotate(-3deg); }
+      50% { transform: translate(-51%,-49%) rotate(-1deg); }
     }
 
+    /* ---------- Modals ---------- */
     .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.7);
+      position: fixed; inset: 0;
+      background: rgba(10, 6, 4, 0.72);
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 10;
+      backdrop-filter: blur(3px);
     }
-
     .panel {
-      background: #f5eadc;
+      background: linear-gradient(180deg, #fff8ec 0%, #f3e3c8 100%);
       color: #2b1a12;
-      border-radius: 16px;
-      padding: 24px;
-      width: 650px;
-      box-shadow: 0 20px 45px rgba(0,0,0,0.55);
+      border-radius: 20px;
+      padding: 26px 28px;
+      width: 560px;
+      max-width: 92vw;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.6);
       border: 4px solid #3a241b;
       text-align: center;
     }
+    .panel h2 { font-size: 28px; margin-bottom: 6px; }
+    .panel p { font-size: 15px; line-height: 1.5; }
 
     button {
       border: none;
-      border-radius: 10px;
-      padding: 12px 16px;
-      margin: 7px;
+      border-radius: 11px;
+      padding: 12px 18px;
+      margin: 6px;
       font-size: 16px;
-      cursor: pointer;
-      background: #ffffff;
-      color: #2b1a12;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    }
-
-    button.selected {
-      background: #57cc99;
-      color: #10291f;
       font-weight: bold;
+      cursor: pointer;
+      background: #fff;
+      color: #2b1a12;
+      box-shadow: 0 4px 0 rgba(0,0,0,0.18);
+      transition: transform 0.08s, box-shadow 0.08s;
+      font-family: inherit;
     }
+    button:hover { transform: translateY(-2px); box-shadow: 0 6px 0 rgba(0,0,0,0.18); }
+    button:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.18); }
+    button.selected { background: #57cc99; color: #10291f; }
+    button.main { background: #3a86ff; color: #fff; }
+    button.danger { background: #ef476f; color: #fff; }
 
-    button.main {
-      background: #3a86ff;
-      color: white;
-    }
+    .ingGrid { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 14px 0; }
 
-    button.danger {
-      background: #ef476f;
-      color: white;
-    }
-
-    #timerBarOuter {
-      width: 100%;
-      height: 14px;
-      background: #5d4037;
-      border-radius: 8px;
-      overflow: hidden;
-      margin-top: 6px;
-    }
-
-    #timerBarInner {
-      height: 100%;
-      width: 0%;
-      background: #57cc99;
-    }
-
+    /* prep minigames */
     .prepBar {
-      width: 420px;
-      height: 28px;
-      background: #ddd;
-      border-radius: 10px;
-      margin: 25px auto;
-      position: relative;
-      overflow: hidden;
+      width: 440px; max-width: 88vw; height: 34px;
+      background: #e8d9c2; border-radius: 12px;
+      margin: 22px auto; position: relative; overflow: hidden;
+      border: 3px solid #3a241b;
     }
-
     .greenZone {
-      position: absolute;
-      left: 42%;
-      width: 16%;
-      height: 100%;
-      background: #57cc99;
+      position: absolute; left: 42%; width: 16%; height: 100%;
+      background: repeating-linear-gradient(45deg,#57cc99,#57cc99 8px,#4bb98a 8px,#4bb98a 16px);
     }
-
-    .marker {
-      position: absolute;
-      top: -10px;
-      width: 10px;
-      height: 48px;
-      background: #ef476f;
-      left: 0%;
-    }
+    .marker { position: absolute; top: -8px; width: 8px; height: 50px; background: #ef476f; left: 0%; border-radius: 4px; box-shadow: 0 0 8px #ef476f; }
 
     .measureCup {
-      width: 70px;
-      height: 210px;
-      border: 4px solid #2b1a12;
-      border-radius: 10px;
-      margin: 20px auto;
-      position: relative;
-      overflow: hidden;
-      background: #eee;
+      width: 86px; height: 220px; border: 4px solid #2b1a12;
+      border-radius: 12px; margin: 18px auto; position: relative;
+      overflow: hidden; background: #f1e7d6;
     }
+    .measureTarget { position: absolute; bottom: 55%; width: 100%; height: 17%; background: rgba(87,204,153,0.85); }
+    .measureFill { position: absolute; bottom: 0; width: 100%; height: 0%; background: linear-gradient(180deg,#8ecae6,#3a86ff); }
 
-    .measureTarget {
-      position: absolute;
-      bottom: 55%;
-      width: 100%;
-      height: 17%;
-      background: rgba(87, 204, 153, 0.75);
-    }
+    .bigEmoji { font-size: 64px; line-height: 1; margin: 8px 0; display: inline-block; }
 
-    .measureFill {
-      position: absolute;
-      bottom: 0;
-      width: 100%;
-      height: 0%;
-      background: #3a86ff;
-    }
-
-    #gameOver, #dayClear {
-      position: fixed;
-      inset: 0;
+    /* ---------- Game over / day clear ---------- */
+    #gameOver, #dayClear, #intro {
+      position: fixed; inset: 0;
       display: none;
-      background: rgba(0,0,0,0.75);
-      align-items: center;
-      justify-content: center;
-      z-index: 20;
-      text-align: center;
+      background: rgba(10, 6, 4, 0.82);
+      align-items: center; justify-content: center;
+      z-index: 20; text-align: center;
+      backdrop-filter: blur(4px);
     }
-
     .bigPanel {
-      background: #fff0dc;
+      background: linear-gradient(180deg,#fff4e0,#f3deb8);
       color: #2b1a12;
-      border-radius: 18px;
-      padding: 35px;
-      width: 540px;
+      border-radius: 22px;
+      padding: 38px 40px;
+      width: 560px; max-width: 92vw;
       border: 6px solid #b00020;
-      box-shadow: 0 20px 55px rgba(0,0,0,0.6);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.65);
     }
+    .bigPanel.success { border-color: #57cc99; }
+    .bigPanel h1 { font-size: 38px; margin-bottom: 10px; }
+    .bigPanel .star { font-size: 40px; letter-spacing: 6px; margin: 10px 0; }
 
-    .success {
-      border-color: #57cc99;
+    .loading {
+      position: fixed; inset: 0; z-index: 40;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 14px;
+      background: radial-gradient(circle at 50% 40%, #3a2a1c, #1b120c 70%);
+      color: #ffd9a0; font-size: 20px;
     }
+    .loading .spin { font-size: 54px; animation: spin 1.4s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
+<div id="loading" class="loading">
+  <div class="spin">🧁</div>
+  <div>Heating up the ovens…</div>
+</div>
+
 <a id="backLink" href="index.html">&larr; Menu</a>
 
-<div id="hud">
-  <b>3D Cafe Rush</b> (first-person)<br>
-  Move: WASD &nbsp;|&nbsp; Look: Mouse / Arrows<br>
-  Click the game to capture the mouse<br>
-  Interact: E or Space &nbsp;|&nbsp; Restart: R<br><br>
-  <span id="dayText"></span><br>
-  <span id="holdingText"></span><br>
-  <span id="ovenText"></span>
+<div id="topBar">
+  <div class="pill"><div class="label">Day</div><div id="dayVal" class="value">1</div></div>
+  <div class="pill"><div class="label">Orders</div><div id="orderVal" class="value">0/3</div></div>
+  <div class="pill"><div class="label">Tips</div><div id="moneyVal" class="value money">$0</div></div>
 </div>
 
 <div id="orderBox">
-  <b>Current Order</b>
-  <div id="orderText">Seat a customer to get an order.</div>
-  <div id="timerBarOuter">
-    <div id="timerBarInner"></div>
+  <div id="orderEmpty">Greet the customer at the door 🚪</div>
+  <div id="orderActive" style="display:none;">
+    <div id="orderName">—</div>
+    <div id="orderIngredients">—</div>
+    <div id="orderSteps"></div>
+    <div id="timerBarOuter"><div id="timerBarInner"></div></div>
   </div>
 </div>
 
 <div id="rageBox">
-  <b>Karen's Rage Meter</b>
-  <div id="rageOuter">
-    <div id="rageInner"></div>
-  </div>
-  <div id="rageText">0 / 5 mistakes</div>
+  <b>😤 Karen's Rage Meter</b>
+  <div id="rageOuter"><div id="rageInner"></div></div>
+  <div id="rageText">0 / 5 strikes</div>
+  <div id="rageFaces">🙂🙂🙂🙂🙂</div>
 </div>
 
-<div id="message">Loading...</div>
-<div id="karenSpeech">you're fired!</div>
+<div id="controls">
+  <b>How to play</b><br>
+  <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> or <b>click</b> to move<br>
+  <span class="key">E</span> / <span class="key">Space</span> — interact<br>
+  Walk onto the <b>glowing</b> station ⭐
+</div>
+
+<div id="message">Loading…</div>
+<div id="karenSpeech">YOU'RE FIRED!</div>
+
+<!-- Intro -->
+<div id="intro">
+  <div class="bigPanel success">
+    <h1>☕ 3D Cafe Rush</h1>
+    <p style="font-size:16px;">
+      You're the new chef at Karen's Bakery. Greet customers, walk them to a table,
+      gather the right ingredients, nail the prep minigame, bake without burning,
+      and serve before time runs out.
+    </p>
+    <p style="margin-top:12px;">Make <b>5 mistakes</b> and Karen storms in to fire you. 😤</p>
+    <p style="margin-top:12px;">Survive the day to <b>unlock new recipes</b> & earn tips!</p>
+    <button class="main" onclick="dismissIntro()">Start Day 1 👨‍🍳</button>
+  </div>
+</div>
 
 <div id="pantryModal" class="modal">
   <div class="panel">
-    <h2>Pantry</h2>
-    <p>Choose the exact ingredients needed for the order.</p>
-    <p id="neededText"></p>
-    <div id="ingredientButtons"></div>
-    <br>
-    <button class="main" onclick="finishPantry()">Done</button>
+    <h2>🧺 Pantry</h2>
+    <p>Tap the <b>exact</b> ingredients for the order.</p>
+    <p id="neededText" style="font-weight:bold;color:#a8744a;margin-top:6px;"></p>
+    <div id="ingredientButtons" class="ingGrid"></div>
+    <button class="main" onclick="finishPantry()">Grab These ✓</button>
     <button class="danger" onclick="closePantry()">Cancel</button>
   </div>
 </div>
 
 <div id="prepModal" class="modal">
   <div class="panel">
-    <h2>Prep Station</h2>
+    <h2>🔪 Prep Station</h2>
     <div id="prepContent"></div>
   </div>
 </div>
 
 <div id="gameOver">
   <div class="bigPanel">
-    <h1>YOU GOT FIRED!</h1>
+    <h1>😤 YOU GOT FIRED!</h1>
     <p id="firedReason"></p>
-    <h3 id="survivedText"></h3>
-    <p>Press R to restart from Day 1.</p>
+    <h3 id="survivedText" style="margin-top:14px;"></h3>
+    <button class="main" onclick="restartGame()">Try Again from Day 1 🔁</button>
   </div>
 </div>
 
 <div id="dayClear">
   <div class="bigPanel success">
-    <h1>Day Complete!</h1>
+    <h1>🌟 Day Complete!</h1>
+    <div id="dayStars" class="star"></div>
     <p id="unlockText"></p>
-    <p>Press Enter or Space to start the next day.</p>
+    <p id="tipText" style="margin-top:8px;font-weight:bold;color:#2a9d5c;"></p>
+    <button class="main" onclick="nextDay()">Start Next Day →</button>
   </div>
 </div>
 
 <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-
 <script>
+/* ===================================================================
+   3D Cafe Rush — third-person follow-cam rebuild.
+   You now SEE your chef walking the cafe from a cozy isometric angle.
+   =================================================================== */
+
 let scene, camera, renderer;
-let clock = new THREE.Clock();
+let clock;
 
 const keys = {};
 const RAGE_LIMIT = 5;
 
-let state = "playing";
-
+let state = "intro"; // intro | playing | pantry | prep | cutscene | karenCutscene | dayclear | fired
 let day = 1;
 let ordersDone = 0;
 let ordersNeeded = 3;
 let mistakes = 0;
+let money = 0;
+let dayTips = 0;
 
-let message = "Walk to the customer at the entrance and press E.";
-let firedReason = "";
-let unlockMessage = "";
-
-const recipes = [
-  {
-    name: "Coffee",
-    ingredients: ["Coffee Beans"],
-    needsOven: false,
-    prepTask: "measuring",
-    timeLimit: 22
-  },
-  {
-    name: "Toast",
-    ingredients: ["Bread"],
-    needsOven: true,
-    prepTask: "cutting",
-    cookTime: 4,
-    burnTime: 4,
-    timeLimit: 27
-  },
-  {
-    name: "Latte",
-    ingredients: ["Coffee Beans", "Milk"],
-    needsOven: false,
-    prepTask: "mixing",
-    timeLimit: 26
-  },
-  {
-    name: "Cheese Toastie",
-    ingredients: ["Bread", "Cheese"],
-    needsOven: true,
-    prepTask: "cutting",
-    cookTime: 5,
-    burnTime: 4,
-    timeLimit: 31
-  },
-  {
-    name: "Cookies",
-    ingredients: ["Flour", "Sugar", "Butter", "Chocolate Chips"],
-    needsOven: true,
-    prepTask: "tray",
-    cookTime: 7,
-    burnTime: 5,
-    timeLimit: 40
-  }
-];
-
-let ingredientUnlocks = ["Milk", "Cheese", "Flour", "Sugar", "Butter", "Chocolate Chips"];
-let unlockedIngredients = ["Coffee Beans", "Bread"];
-
+let message = "";
 let currentOrder = null;
 let selectedIngredients = [];
 let holding = null;
 
-let player = {
-  group: null,
-  speed: 5.2,
-  walk: 0,
-  yaw: Math.PI,   // facing direction (radians); start looking toward the cafe
-  pitch: 0,       // look up/down
-  eyeHeight: 1.7
+// click-to-move target (null = no target)
+let moveTarget = null;
+
+const recipes = [
+  { name: "Coffee",         emoji: "☕", ingredients: ["Coffee Beans"], needsOven: false, prepTask: "measuring", timeLimit: 24, tip: 4 },
+  { name: "Toast",          emoji: "🍞", ingredients: ["Bread"], needsOven: true, prepTask: "cutting", cookTime: 4, burnTime: 5, timeLimit: 28, tip: 5 },
+  { name: "Latte",          emoji: "🥛", ingredients: ["Coffee Beans", "Milk"], needsOven: false, prepTask: "mixing", timeLimit: 28, tip: 6 },
+  { name: "Cheese Toastie", emoji: "🧀", ingredients: ["Bread", "Cheese"], needsOven: true, prepTask: "cutting", cookTime: 5, burnTime: 5, timeLimit: 33, tip: 8 },
+  { name: "Cookies",        emoji: "🍪", ingredients: ["Flour", "Sugar", "Butter", "Chocolate Chips"], needsOven: true, prepTask: "tray", cookTime: 7, burnTime: 6, timeLimit: 42, tip: 12 }
+];
+
+let ingredientUnlocks = ["Milk", "Cheese", "Flour", "Sugar", "Butter", "Chocolate Chips"];
+let unlockedIngredients = ["Coffee Beans", "Bread"];
+const INGREDIENT_EMOJI = {
+  "Coffee Beans": "🫘", "Bread": "🍞", "Milk": "🥛", "Cheese": "🧀",
+  "Flour": "🌾", "Sugar": "🧂", "Butter": "🧈", "Chocolate Chips": "🍫"
 };
 
-let customer = {
-  group: null,
-  artMesh: null,
-  active: false,
-  following: false,
-  seated: false,
-  tableIndex: null
-};
-
-let karen = {
-  group: null,
-  active: false,
-  phase: "hidden",
-  timer: 0
-};
-
-let oven = {
-  item: null,
-  cooking: false,
-  ready: false,
-  burned: false,
-  cookTimer: 0,
-  burnTimer: 0,
-  burnMistakeCounted: false,
-  foodMesh: null
-};
-
-let prepGame = {
-  type: "",
-  marker: 0,
-  markerDir: 1,
-  fill: 0,
-  fillDir: 1,
-  hits: 0,
-  mixCount: 0,
-  lastMixKey: "",
-  placed: 0
-};
-
-let cutscene = {
-  timer: 0,
-  mesh: null,
-  recipe: null
-};
+let player = { group: null, ref: null, speed: 5.6, facing: Math.PI };
+let customer = { group: null, ref: null, active: false, following: false, seated: false, tableIndex: null };
+let karen = { group: null, ref: null, active: false, phase: "hidden", timer: 0 };
+let oven = { item: null, cooking: false, ready: false, burned: false, cookTimer: 0, burnTimer: 0, burnMistakeCounted: false, foodMesh: null, glow: null };
+let prepGame = { type: "", marker: 0, markerDir: 1, fill: 0, fillDir: 1, hits: 0, mixCount: 0, lastMixKey: "", placed: 0 };
+let cutscene = { timer: 0, mesh: null, recipe: null };
 
 let heldMesh = null;
 
 const stationPositions = {
-  pantry: new THREE.Vector3(-8.5, 0, -3.2),
-  prep: new THREE.Vector3(-3.7, 0, -3.4),
-  oven: new THREE.Vector3(1.4, 0, -3.3),
-  trash: new THREE.Vector3(-8.5, 0, 4.3)
+  pantry: new THREE.Vector3(-8.3, 0, -3.2),
+  prep:   new THREE.Vector3(-3.6, 0, -3.4),
+  oven:   new THREE.Vector3(1.6, 0, -3.3),
+  trash:  new THREE.Vector3(-8.3, 0, 4.3)
 };
+const stationGlows = {}; // name -> ring mesh
+const stationLabels = {}; // name -> floating sprite
 
-const entrancePos = new THREE.Vector3(9.1, 0, 6.2);
+const entrancePos = new THREE.Vector3(9.0, 0, 6.0);
 
 const tables = [
-  { pos: new THREE.Vector3(6.7, 0, -3.2), occupied: false },
-  { pos: new THREE.Vector3(7.1, 0, 2.0), occupied: false },
-  { pos: new THREE.Vector3(3.6, 0, 3.4), occupied: false }
+  { pos: new THREE.Vector3(6.5, 0, -3.0), occupied: false },
+  { pos: new THREE.Vector3(7.0, 0, 2.2), occupied: false },
+  { pos: new THREE.Vector3(3.6, 0, 3.6), occupied: false }
 ];
 
-// ----- AI character art (2D billboards) -----
-const CHARACTER_ART = {
-  chef: "assets/characters/chef.png",
-  karen: "assets/characters/karen.png",
-  customers: [
-    "assets/characters/customer1.png",
-    "assets/characters/customer2.png",
-    "assets/characters/customer3.png",
-    "assets/characters/customer4.png",
-    "assets/characters/customer5.png"
-  ]
-};
+/* ---------- Roblox-style 3D character builder ----------
+   Every person (chef, customers, Karen) is built from blocky parts so they
+   look like little toy figures instead of flat cardboard cut-outs. Each
+   character exposes parts (legs/arms/head) so we can animate a walk cycle. */
 
-const textureCache = {};
-const billboards = []; // sprites that should always face the camera
-const _bbWorldPos = new THREE.Vector3(); // scratch: billboard world position
-const _bbLook = new THREE.Vector3();     // scratch: billboard -> camera dir
-let _bbYaw = 0, _bbPitch = 0;            // scratch: billboard facing angles
+// A palette per customer so the cafe feels populated with distinct people.
+const CUSTOMER_LOOKS = [
+  { skin: 0xf2c79a, shirt: 0xef476f, pants: 0x2b2d42, hair: 0x3b2417, hat: null },
+  { skin: 0x8d5524, shirt: 0x4361ee, pants: 0x22223b, hair: 0x1a1a1a, hat: null },
+  { skin: 0xffd9b3, shirt: 0x2a9d5c, pants: 0x5a3e2b, hair: 0xc97b3b, hat: 0xffd166 },
+  { skin: 0xe0ac69, shirt: 0xffb703, pants: 0x3a4a6b, hair: 0x222222, hat: null },
+  { skin: 0xc68642, shirt: 0x9b5de5, pants: 0x2b2d42, hair: 0x4a2f1f, hat: 0xff8c42 },
+  { skin: 0xffe0bd, shirt: 0x00bbf9, pants: 0x264653, hair: 0x6b4226, hat: null },
+  { skin: 0xa0764a, shirt: 0xf15bb5, pants: 0x1d3557, hair: 0x111111, hat: null }
+];
 
-function loadCharacterTexture(url) {
-  if (textureCache[url]) return textureCache[url];
+// Karen's signature look: angry red, blonde "can I speak to the manager" hair.
+const KAREN_LOOK = { skin: 0xf6c9a8, shirt: 0xb00020, pants: 0x2b2d42, hair: 0xf4d35e, hat: null, karen: true };
 
-  const tex = new THREE.TextureLoader().load(url);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  textureCache[url] = tex;
-  return tex;
+const walkers = []; // characters with a walk cycle we can animate
+
+// Build a blocky humanoid. Returns a group plus references to animatable limbs.
+function buildCharacter(look, scale = 1) {
+  const g = new THREE.Group();
+  const rig = new THREE.Group(); // everything that bobs/turns
+  g.add(rig);
+
+  const skinMat = mat(look.skin, 0.8);
+  const shirtMat = mat(look.shirt, 0.75);
+  const pantsMat = mat(look.pants, 0.8);
+
+  function part(w, h, d, material, x, y, z) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+    m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true;
+    return m;
+  }
+
+  // torso
+  rig.add(part(0.78, 0.95, 0.46, shirtMat, 0, 1.15, 0));
+
+  // head (blocky Roblox cube head) + face
+  const head = part(0.62, 0.6, 0.62, skinMat, 0, 1.95, 0);
+  rig.add(head);
+  const faceMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5 });
+  const eyeL = part(0.1, 0.12, 0.05, faceMat, -0.14, 1.99, 0.31);
+  const eyeR = part(0.1, 0.12, 0.05, faceMat, 0.14, 1.99, 0.31);
+  rig.add(eyeL, eyeR);
+  // mouth — Karen frowns, everyone else smiles
+  const mouthMat = new THREE.MeshStandardMaterial({ color: look.karen ? 0x7a0010 : 0xb5482f, roughness: 0.6 });
+  const mouth = part(0.26, 0.06, 0.05, mouthMat, 0, look.karen ? 1.74 : 1.78, 0.31);
+  if (look.karen) mouth.rotation.z = 0; // a flat angry line
+  rig.add(mouth);
+
+  // hair (a slab on top + back) unless wearing a hat
+  if (look.hair != null) {
+    const hairMat = mat(look.hair, 0.85);
+    rig.add(part(0.68, 0.2, 0.68, hairMat, 0, 2.28, 0));
+    if (look.karen) {
+      // big swept-back manager hair
+      rig.add(part(0.72, 0.5, 0.4, hairMat, 0, 2.05, -0.28));
+    } else {
+      rig.add(part(0.7, 0.28, 0.3, hairMat, 0, 2.05, -0.28));
+    }
+  }
+  if (look.hat != null) {
+    const hatMat = mat(look.hat, 0.7);
+    rig.add(part(0.7, 0.18, 0.7, hatMat, 0, 2.3, 0));    // cap base
+    rig.add(part(0.7, 0.08, 0.35, hatMat, 0, 2.24, 0.45)); // brim
+  }
+
+  // arms (pivot at shoulder so they swing)
+  const armL = new THREE.Group(); armL.position.set(-0.49, 1.5, 0);
+  armL.add(part(0.2, 0.85, 0.24, shirtMat, 0, -0.42, 0));
+  rig.add(armL);
+  const armR = new THREE.Group(); armR.position.set(0.49, 1.5, 0);
+  armR.add(part(0.2, 0.85, 0.24, shirtMat, 0, -0.42, 0));
+  rig.add(armR);
+
+  // legs (pivot at hip so they stride)
+  const legL = new THREE.Group(); legL.position.set(-0.2, 0.68, 0);
+  legL.add(part(0.26, 0.7, 0.28, pantsMat, 0, -0.35, 0));
+  rig.add(legL);
+  const legR = new THREE.Group(); legR.position.set(0.2, 0.68, 0);
+  legR.add(part(0.26, 0.7, 0.28, pantsMat, 0, -0.35, 0));
+  rig.add(legR);
+
+  // soft contact shadow so figures don't look like they float
+  const blob = new THREE.Mesh(new THREE.CircleGeometry(0.55, 20),
+    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22 }));
+  blob.rotation.x = -Math.PI / 2; blob.position.y = 0.02;
+  g.add(blob);
+
+  g.scale.setScalar(scale);
+
+  const ref = { group: g, rig, legs: [legL, legR], arms: [armL, armR], walk: 0 };
+  walkers.push(ref);
+  return ref;
 }
 
-// Build a flat, upright image that always faces the camera.
-// height = world-units tall; aspect = width/height of the source art.
-function createBillboard(url, height = 2.4, aspect = 0.5) {
-  const tex = loadCharacterTexture(url);
-
-  const mat = new THREE.MeshBasicMaterial({
-    map: tex,
-    transparent: true,
-    alphaTest: 0.5,
-    side: THREE.DoubleSide,
-    depthWrite: false
-  });
-
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(height * aspect, height), mat);
-  mesh.position.y = height / 2;
-  mesh.userData.isBillboard = true;
-  mesh.renderOrder = 2;
-
-  billboards.push(mesh);
-  return mesh;
+// Drive a character's limbs. `moving` swings legs/arms; otherwise eases to rest.
+function animateWalk(ref, dt, moving, intensity = 1) {
+  if (moving) {
+    ref.walk += dt * 11;
+    const s = Math.sin(ref.walk) * 0.5 * intensity;
+    ref.legs[0].rotation.x = s;
+    ref.legs[1].rotation.x = -s;
+    ref.arms[0].rotation.x = -s * 0.8;
+    ref.arms[1].rotation.x = s * 0.8;
+    ref.rig.position.y = Math.abs(Math.sin(ref.walk)) * 0.07 * intensity;
+  } else {
+    ref.legs[0].rotation.x *= 0.8;
+    ref.legs[1].rotation.x *= 0.8;
+    ref.arms[0].rotation.x *= 0.8;
+    ref.arms[1].rotation.x *= 0.8;
+    ref.rig.position.y *= 0.8;
+  }
 }
 
-try {
-  init();
-  startDay();
-  animate();
-} catch (err) {
-  showFatalError(err);
-}
+/* ---------- Boot ---------- */
+window.addEventListener("load", () => {
+  try {
+    clock = new THREE.Clock();
+    init();
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("intro").style.display = "flex";
+    updateHUD();
+    updateRageMeter();
+    animate();
+  } catch (err) {
+    showFatalError(err);
+  }
+});
 
 function showFatalError(err) {
   console.error(err);
+  document.getElementById("loading").style.display = "none";
   const div = document.createElement("div");
-  div.style.cssText =
-    "position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;" +
-    "justify-content:center;background:#1f1714;color:#fff5e6;text-align:center;" +
-    "padding:30px;z-index:50;font-family:Arial,sans-serif;";
+  div.style.cssText = "position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#1b120c;color:#fff5e6;text-align:center;padding:30px;z-index:50;";
   div.innerHTML =
     "<h1>Couldn't start 3D Cafe Rush</h1>" +
-    "<p style='max-width:560px;line-height:1.5'>This game needs WebGL (3D graphics), " +
-    "which this view can't provide. If you opened it inside an editor preview pane, " +
-    "open the file in a real browser tab instead (Chrome, Firefox, or Safari). " +
-    "Otherwise, enable hardware acceleration in your browser settings.</p>" +
-    "<p style='max-width:560px;line-height:1.5;opacity:0.8;font-size:14px'>Tip: double-click " +
-    "<b>emma.html</b> in Finder, or run a local server and visit it at " +
-    "<b>http://localhost:8000/emma.html</b>.</p>" +
+    "<p style='max-width:560px;line-height:1.5'>This game needs WebGL. If you opened it inside an editor preview, open <b>emma.html</b> in a real browser tab (Chrome/Firefox/Safari).</p>" +
     "<p><a href='index.html' style='color:#ffd166'>&larr; Back to menu</a></p>";
   document.body.appendChild(div);
 }
 
+/* ---------- Scene setup ---------- */
 function init() {
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x2b211d);
+  scene.background = new THREE.Color(0x241812);
+  scene.fog = new THREE.Fog(0x241812, 26, 46);
 
-  camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
 
-  // Allow software/fallback WebGL so the game still runs in sandboxed
-  // preview panes and machines without hardware acceleration.
-  renderer = new THREE.WebGLRenderer({
-    antialias: true,
-    failIfMajorPerformanceCaveat: false,
-    powerPreference: "default"
-  });
+  renderer = new THREE.WebGLRenderer({ antialias: true, failIfMajorPerformanceCaveat: false, powerPreference: "default" });
   renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   document.body.appendChild(renderer.domElement);
 
-  const ambient = new THREE.AmbientLight(0xffffff, 0.55);
-  scene.add(ambient);
+  scene.add(new THREE.AmbientLight(0xffe9cf, 0.62));
 
-  const sun = new THREE.DirectionalLight(0xfff2d6, 1.2);
-  sun.position.set(5, 12, 8);
+  const sun = new THREE.DirectionalLight(0xfff0d0, 1.15);
+  sun.position.set(8, 16, 6);
   sun.castShadow = true;
-  sun.shadow.mapSize.width = 2048;
-  sun.shadow.mapSize.height = 2048;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.left = -16; sun.shadow.camera.right = 16;
+  sun.shadow.camera.top = 16; sun.shadow.camera.bottom = -16;
+  sun.shadow.bias = -0.0004;
   scene.add(sun);
 
-  const warmLight = new THREE.PointLight(0xffc37a, 1.2, 20);
-  warmLight.position.set(0, 5, -2);
-  scene.add(warmLight);
+  const warm = new THREE.PointLight(0xffb15a, 0.9, 26);
+  warm.position.set(0, 6, -1);
+  scene.add(warm);
 
   createCafe();
   createStations();
   createTables();
+  createDecor();
 
-  player.group = createPlayer();
-  player.group.position.set(0, 0, 5.2);
+  createChef();
+  player.group.position.set(0, 0, 4.5);
   scene.add(player.group);
 
-  customer.group = createCustomer();
+  createCustomer();
   scene.add(customer.group);
 
-  karen.group = createKaren();
+  createKaren();
   scene.add(karen.group);
 
+  // start camera somewhere sensible so first frame isn't jarring
+  camera.position.set(player.group.position.x, 11, player.group.position.z + 11);
+  camera.lookAt(player.group.position);
+
   window.addEventListener("resize", onResize);
+  setupInput();
 }
 
-function createMat(color, roughness = 0.65, metalness = 0.05) {
-  return new THREE.MeshStandardMaterial({
-    color,
-    roughness,
-    metalness
-  });
+function mat(color, rough = 0.7, metal = 0.04) {
+  return new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal });
 }
-
-function box(w, h, d, color, metalness = 0.05) {
-  const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(w, h, d),
-    createMat(color, 0.65, metalness)
-  );
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  return mesh;
+function box(w, h, d, color, metal = 0.04) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color, 0.7, metal));
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
 }
-
-function cylinder(radius, height, color) {
-  const mesh = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius, radius, height, 32),
-    createMat(color)
-  );
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  return mesh;
+function cyl(r, h, color, metal = 0.04) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 24), mat(color, 0.7, metal));
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
 }
 
 function createCafe() {
-  const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(22, 16),
-    createMat(0xb98b63)
-  );
-  floor.rotation.x = -Math.PI / 2;
-  floor.receiveShadow = true;
-  scene.add(floor);
+  // checkerboard floor
+  const floorGroup = new THREE.Group();
+  const tileA = mat(0xc9a06f, 0.85), tileB = mat(0xb5895a, 0.85);
+  const size = 2, nx = 11, nz = 8;
+  for (let i = 0; i < nx; i++) {
+    for (let j = 0; j < nz; j++) {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size), (i + j) % 2 ? tileA : tileB);
+      m.rotation.x = -Math.PI / 2;
+      m.position.set((i - nx / 2 + 0.5) * size, 0, (j - nz / 2 + 0.5) * size);
+      m.receiveShadow = true;
+      floorGroup.add(m);
+    }
+  }
+  scene.add(floorGroup);
 
-  const grid = new THREE.GridHelper(22, 22, 0x6b4634, 0x6b4634);
-  grid.position.y = 0.01;
-  scene.add(grid);
+  // walls
+  const wallMat = mat(0x8a6a55, 0.9);
+  function wall(w, h, d, x, y, z) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
+    m.position.set(x, y, z); m.receiveShadow = true; m.castShadow = true;
+    scene.add(m); return m;
+  }
+  wall(22, 5, 0.4, 0, 2.5, -8);
+  wall(0.4, 5, 16, -11, 2.5, 0);
+  wall(0.4, 5, 16, 11, 2.5, 0);
 
-  const backWall = box(22, 4, 0.35, 0x8b6b58);
-  backWall.position.set(0, 2, -8);
-  scene.add(backWall);
+  // warm wainscot stripe
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(22, 0.9, 0.42), mat(0x6b4231, 0.9));
+  stripe.position.set(0, 0.7, -7.99); scene.add(stripe);
 
-  const leftWall = box(0.35, 4, 16, 0x7d5a4a);
-  leftWall.position.set(-11, 2, 0);
-  scene.add(leftWall);
+  // big windows on back wall
+  for (const wx of [-7, 7]) {
+    const frame = box(2.9, 1.9, 0.2, 0x4b2e23);
+    frame.position.set(wx, 2.9, -7.82); scene.add(frame);
+    const glass = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 1.5),
+      new THREE.MeshStandardMaterial({ color: 0xbfe3f5, emissive: 0x6ea6c7, emissiveIntensity: 0.35, roughness: 0.2 }));
+    glass.position.set(wx, 2.9, -7.7); scene.add(glass);
+  }
 
-  const rightWall = box(0.35, 4, 16, 0x7d5a4a);
-  rightWall.position.set(11, 2, 0);
-  scene.add(rightWall);
+  // shop sign
+  const sign = box(6, 1, 0.25, 0x3a241b);
+  sign.position.set(0, 4.1, -7.78); scene.add(sign);
+  scene.add(makeTextSprite("KAREN'S  BAKERY", { x: 0, y: 4.1, z: -7.55 }, 1.0, "#ffd166", 56, true));
 
-  const sign = box(4.8, 0.7, 0.2, 0x3a241b);
-  sign.position.set(0, 3.1, -7.78);
-  scene.add(sign);
-
-  const door = box(1.8, 3, 0.2, 0x4b2e23);
-  door.position.set(9.2, 1.5, 7.75);
-  scene.add(door);
-
-  const window1 = box(2.4, 1.4, 0.15, 0xa7d8f0);
-  window1.position.set(-7, 2.5, -7.75);
-  scene.add(window1);
-
-  const window2 = box(2.4, 1.4, 0.15, 0xa7d8f0);
-  window2.position.set(7, 2.5, -7.75);
-  scene.add(window2);
+  // door
+  const door = box(2, 3.4, 0.25, 0x5a3826);
+  door.position.set(9.0, 1.7, 7.7); scene.add(door);
+  scene.add(makeTextSprite("🚪 ENTRANCE", { x: 9.0, y: 3.9, z: 7.5 }, 0.7, "#ffe8c4", 40));
 }
 
 function createStations() {
@@ -678,172 +745,264 @@ function createStations() {
   createPrepStation();
   createOvenStation();
   createTrash();
+
+  // glowing rings + labels on each station
+  addStationGlow("pantry", "🧺 Pantry", 0x9ae6b4);
+  addStationGlow("prep", "🔪 Prep", 0xffd166);
+  addStationGlow("oven", "🔥 Oven", 0xff8c42);
+  addStationGlow("trash", "🗑️ Trash", 0x9aa0a6);
+}
+
+function addStationGlow(name, label, color) {
+  const p = stationPositions[name];
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(1.15, 1.5, 40),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.0, side: THREE.DoubleSide })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.set(p.x, 0.05, p.z + 0.9);
+  scene.add(ring);
+  stationGlows[name] = ring;
+
+  const lab = makeTextSprite(label, { x: p.x, y: 3.0, z: p.z + 0.9 }, 0.62, "#fff5e6", 40);
+  lab.material.opacity = 0;
+  scene.add(lab);
+  stationLabels[name] = lab;
 }
 
 function createPantry() {
   const p = stationPositions.pantry;
-
-  const cabinet = box(2.5, 2.9, 0.9, 0x7a4a2a);
-  cabinet.position.set(p.x, 1.45, p.z);
-  scene.add(cabinet);
-
+  const cab = box(2.6, 3.0, 1.0, 0x7a4a2a);
+  cab.position.set(p.x, 1.5, p.z); scene.add(cab);
   for (let i = 0; i < 3; i++) {
-    const shelf = box(2.35, 0.12, 0.95, 0x3b2416);
-    shelf.position.set(p.x, 0.75 + i * 0.75, p.z + 0.02);
-    scene.add(shelf);
+    const shelf = box(2.4, 0.12, 1.02, 0x3b2416);
+    shelf.position.set(p.x, 0.8 + i * 0.78, p.z + 0.03); scene.add(shelf);
   }
-
   const colors = [0x6f4e37, 0xd9a441, 0xe8f3ff, 0xffd166, 0xefe2ba, 0xc9184a];
-
   for (let i = 0; i < 6; i++) {
-    const item = box(0.42, 0.45, 0.35, colors[i]);
-    item.position.set(p.x - 0.75 + (i % 3) * 0.75, 0.55 + Math.floor(i / 3) * 0.9, p.z + 0.5);
-    scene.add(item);
+    const jar = cyl(0.18, 0.46, colors[i]);
+    jar.position.set(p.x - 0.8 + (i % 3) * 0.8, 0.6 + Math.floor(i / 3) * 0.78, p.z + 0.55);
+    scene.add(jar);
   }
 }
 
 function createPrepStation() {
   const p = stationPositions.prep;
-
-  const table = box(2.7, 0.35, 1.25, 0xb7b7a4, 0.25);
-  table.position.set(p.x, 1.05, p.z);
-  scene.add(table);
-
-  const leg1 = box(0.15, 1, 0.15, 0x555555, 0.4);
-  leg1.position.set(p.x - 1.1, 0.5, p.z - 0.45);
-  scene.add(leg1);
-
-  const leg2 = leg1.clone();
-  leg2.position.set(p.x + 1.1, 0.5, p.z - 0.45);
-  scene.add(leg2);
-
-  const board = box(1.2, 0.08, 0.65, 0x8b5e34);
-  board.position.set(p.x, 1.28, p.z);
-  scene.add(board);
+  const table = box(2.8, 0.32, 1.4, 0xd8c4a0, 0.2);
+  table.position.set(p.x, 1.05, p.z); scene.add(table);
+  for (const dx of [-1.15, 1.15]) for (const dz of [-0.5, 0.5]) {
+    const leg = box(0.16, 1.0, 0.16, 0x555555, 0.3);
+    leg.position.set(p.x + dx, 0.5, p.z + dz); scene.add(leg);
+  }
+  const board = box(1.3, 0.1, 0.75, 0x8b5e34);
+  board.position.set(p.x, 1.26, p.z + 0.05); scene.add(board);
+  const knife = box(0.5, 0.04, 0.08, 0xd0d0d0, 0.6);
+  knife.position.set(p.x + 0.4, 1.34, p.z + 0.25); knife.rotation.y = 0.4; scene.add(knife);
 }
 
 function createOvenStation() {
   const p = stationPositions.oven;
-
-  const ovenBody = box(2.5, 2.2, 1.2, 0xbfc5c9, 0.55);
-  ovenBody.position.set(p.x, 1.1, p.z);
-  scene.add(ovenBody);
-
-  const door = box(1.7, 0.85, 0.08, 0x1f2933, 0.2);
-  door.position.set(p.x, 0.9, p.z + 0.62);
-  scene.add(door);
-
+  const body = box(2.6, 2.2, 1.3, 0xcfd6da, 0.5);
+  body.position.set(p.x, 1.1, p.z); scene.add(body);
+  // door with emissive glow when cooking
+  const doorMat = new THREE.MeshStandardMaterial({ color: 0x1f2933, emissive: 0x000000, roughness: 0.3, metalness: 0.4 });
+  const door = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.95, 0.1), doorMat);
+  door.position.set(p.x, 0.95, p.z + 0.66); door.castShadow = true; scene.add(door);
+  oven.glow = door; // reuse for glow
   for (let i = 0; i < 4; i++) {
-    const burner = cylinder(0.28, 0.05, 0x111111);
-    burner.position.set(p.x - 0.65 + (i % 2) * 1.3, 2.23, p.z - 0.25 + Math.floor(i / 2) * 0.55);
+    const burner = cyl(0.26, 0.06, 0x111111);
+    burner.position.set(p.x - 0.65 + (i % 2) * 1.3, 2.24, p.z - 0.28 + Math.floor(i / 2) * 0.56);
     scene.add(burner);
   }
 }
 
 function createTrash() {
   const p = stationPositions.trash;
-
-  const trash = box(0.9, 1.2, 0.9, 0x495057, 0.25);
-  trash.position.set(p.x, 0.6, p.z);
-  scene.add(trash);
-
-  const lid = box(1.05, 0.15, 1.05, 0x212529, 0.25);
-  lid.position.set(p.x, 1.25, p.z);
-  scene.add(lid);
+  const can = cyl(0.5, 1.2, 0x4a5258, 0.2);
+  can.position.set(p.x, 0.6, p.z); scene.add(can);
+  const lid = cyl(0.56, 0.14, 0x2a2f33, 0.2);
+  lid.position.set(p.x, 1.27, p.z); scene.add(lid);
 }
 
 function createTables() {
   tables.forEach(t => {
-    const top = cylinder(0.8, 0.18, 0x7f5539);
-    top.position.set(t.pos.x, 0.85, t.pos.z);
-    scene.add(top);
-
-    const pole = cylinder(0.12, 0.85, 0x3a241b);
-    pole.position.set(t.pos.x, 0.4, t.pos.z);
-    scene.add(pole);
-
-    const chairOffsets = [
-      new THREE.Vector3(1.2, 0, 0),
-      new THREE.Vector3(-1.2, 0, 0),
-      new THREE.Vector3(0, 0, 1.2)
-    ];
-
-    chairOffsets.forEach(o => {
-      const chair = box(0.55, 0.35, 0.55, 0x5e3023);
-      chair.position.set(t.pos.x + o.x, 0.35, t.pos.z + o.z);
-      scene.add(chair);
-
-      const back = box(0.55, 0.75, 0.12, 0x4e2f1f);
-      back.position.set(t.pos.x + o.x, 0.8, t.pos.z + o.z + 0.25);
-      scene.add(back);
-    });
+    const top = cyl(0.85, 0.18, 0x9c6b43);
+    top.position.set(t.pos.x, 0.88, t.pos.z); scene.add(top);
+    const pole = cyl(0.13, 0.88, 0x3a241b);
+    pole.position.set(t.pos.x, 0.42, t.pos.z); scene.add(pole);
+    for (const o of [[1.25, 0], [-1.25, 0], [0, 1.25]]) {
+      const seat = cyl(0.32, 0.16, 0x6e3b26);
+      seat.position.set(t.pos.x + o[0], 0.46, t.pos.z + o[1]); scene.add(seat);
+      const sp = cyl(0.08, 0.46, 0x4e2f1f);
+      sp.position.set(t.pos.x + o[0], 0.23, t.pos.z + o[1]); scene.add(sp);
+    }
   });
 }
 
-function createPlayer() {
-  // First-person: the camera lives at the chef's eyes, so we don't draw the
-  // chef's own body. The group is still the movement anchor for everything
-  // (camera, held food, interaction distances).
-  return new THREE.Group();
+function createDecor() {
+  // a couple of plants in the corners
+  for (const c of [[-9.8, -6.8], [9.8, -6.8], [-9.8, 6.5]]) {
+    const pot = cyl(0.4, 0.6, 0xb5651d);
+    pot.position.set(c[0], 0.3, c[1]); scene.add(pot);
+    const bush = new THREE.Mesh(new THREE.IcosahedronGeometry(0.6, 0), mat(0x4caf50, 0.9));
+    bush.position.set(c[0], 1.0, c[1]); bush.castShadow = true; scene.add(bush);
+  }
+  // hanging warm lamps
+  for (const lx of [-5, 0, 5]) {
+    const cord = cyl(0.02, 1.2, 0x222222);
+    cord.position.set(lx, 4.4, -1); scene.add(cord);
+    const shade = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.5, 16),
+      new THREE.MeshStandardMaterial({ color: 0xffd166, emissive: 0xffb14a, emissiveIntensity: 0.7 }));
+    shade.position.set(lx, 3.7, -1); shade.rotation.x = Math.PI; scene.add(shade);
+  }
+}
+
+/* ---------- The Chef (you!) — a 3D blocky figure in chef whites ---------- */
+function createChef() {
+  // chef look: white apron/shirt, navy trousers, no hair (hat covers it)
+  const ref = buildCharacter({ skin: 0xf0c79a, shirt: 0xf2efe9, pants: 0x3a4a6b, hair: null, hat: null }, 1.0);
+
+  // swap on the iconic puffy chef's hat
+  const hatBand = cyl(0.34, 0.2, 0xffffff);
+  hatBand.position.y = 2.32; ref.rig.add(hatBand);
+  const puff = new THREE.Mesh(new THREE.SphereGeometry(0.38, 18, 14), mat(0xffffff, 0.85));
+  puff.position.y = 2.55; puff.scale.y = 0.85; puff.castShadow = true; ref.rig.add(puff);
+
+  // apron bib so the chef reads clearly from above
+  const bib = box(0.5, 0.55, 0.06, 0xffffff);
+  bib.position.set(0, 1.15, 0.24); ref.rig.add(bib);
+
+  player.group = ref.group;
+  player.ref = ref;
 }
 
 function createCustomer() {
-  const g = new THREE.Group();
-
-  // The customer art swaps per arrival; build with the first image and
-  // keep a reference so newCustomer() can change the texture.
-  const art = createBillboard(CHARACTER_ART.customers[0], 2.5, 0.42);
-  art.userData.isCustomerArt = true;
-  g.add(art);
-  customer.artMesh = art;
-
-  g.visible = false;
-  return g;
+  // built fresh; look is re-rolled each arrival via reskinCustomer()
+  const ref = buildCharacter(CUSTOMER_LOOKS[0], 1.0);
+  ref.group.visible = false;
+  customer.group = ref.group;
+  customer.ref = ref;
 }
 
-function setCustomerArt(url) {
-  if (!customer.artMesh) return;
-  customer.artMesh.material.map = loadCharacterTexture(url);
-  customer.artMesh.material.needsUpdate = true;
+// Re-roll the customer's whole 3D figure so each new patron looks different.
+function reskinCustomer() {
+  const look = CUSTOMER_LOOKS[Math.floor(Math.random() * CUSTOMER_LOOKS.length)];
+  // remove the old figure from the walkers list + scene, rebuild in place
+  const idx = walkers.indexOf(customer.ref);
+  if (idx >= 0) walkers.splice(idx, 1);
+  const pos = customer.group.position.clone();
+  scene.remove(customer.group);
+
+  const ref = buildCharacter(look, 0.92 + Math.random() * 0.18); // vary height a touch
+  ref.group.position.copy(pos);
+  scene.add(ref.group);
+  customer.group = ref.group;
+  customer.ref = ref;
 }
 
 function createKaren() {
-  const g = new THREE.Group();
+  const ref = buildCharacter(KAREN_LOOK, 1.12); // Karen is a little taller/scarier
+  ref.group.visible = false;
+  ref.group.position.copy(entrancePos);
+  karen.group = ref.group;
+  karen.ref = ref;
+}
 
-  const art = createBillboard(CHARACTER_ART.karen, 2.9, 0.46);
-  g.add(art);
+/* ---------- Floating text sprites (labels / popups) ---------- */
+function makeTextSprite(text, pos, scale, color, fontPx, glow) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512; canvas.height = 128;
+  const ctx = canvas.getContext("2d");
+  ctx.font = `900 ${fontPx || 44}px "Trebuchet MS", Arial, sans-serif`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.lineWidth = 8; ctx.strokeStyle = "rgba(0,0,0,0.85)";
+  ctx.strokeText(text, 256, 64);
+  if (glow) { ctx.shadowColor = color; ctx.shadowBlur = 16; }
+  ctx.fillStyle = color || "#fff";
+  ctx.fillText(text, 256, 64);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+  spr.position.set(pos.x, pos.y, pos.z);
+  spr.scale.set(4 * scale, 1 * scale, 1);
+  spr.renderOrder = 10;
+  return spr;
+}
 
-  g.visible = false;
-  g.position.copy(entrancePos);
+// transient score/feedback popups
+const popups = [];
+function popup(text, worldPos, color) {
+  const spr = makeTextSprite(text, { x: worldPos.x, y: worldPos.y + 2.4, z: worldPos.z }, 0.7, color || "#9ae6b4", 50, true);
+  scene.add(spr);
+  popups.push({ spr, life: 0, max: 1.3, y0: worldPos.y + 2.4 });
+}
+function updatePopups(dt) {
+  for (let i = popups.length - 1; i >= 0; i--) {
+    const p = popups[i];
+    p.life += dt;
+    const t = p.life / p.max;
+    p.spr.position.y = p.y0 + t * 1.6;
+    p.spr.material.opacity = Math.max(0, 1 - t);
+    if (p.life >= p.max) { scene.remove(p.spr); popups.splice(i, 1); }
+  }
+}
 
-  return g;
+/* ---------- Steam / sizzle particles over the oven ---------- */
+const steam = [];
+function spawnSteam() {
+  const p = stationPositions.oven;
+  const m = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 }));
+  m.position.set(p.x + (Math.sin(steam.length) * 0.4), 2.3, p.z);
+  scene.add(m);
+  steam.push({ m, life: 0 });
+}
+let steamTimer = 0;
+function updateSteam(dt) {
+  if (oven.cooking) {
+    steamTimer += dt;
+    if (steamTimer > 0.35) { steamTimer = 0; spawnSteam(); }
+  }
+  for (let i = steam.length - 1; i >= 0; i--) {
+    const s = steam[i];
+    s.life += dt;
+    s.m.position.y += dt * 0.9;
+    s.m.material.opacity = Math.max(0, 0.5 - s.life * 0.35);
+    s.m.scale.multiplyScalar(1 + dt * 0.6);
+    if (s.life > 1.4) { scene.remove(s.m); steam.splice(i, 1); }
+  }
+}
+
+/* ===================================================================
+   GAME FLOW
+   =================================================================== */
+function dismissIntro() {
+  document.getElementById("intro").style.display = "none";
+  startDay();
 }
 
 function startDay() {
   state = "playing";
   ordersDone = 0;
   mistakes = 0;
+  dayTips = 0;
   ordersNeeded = Math.min(3 + Math.floor(day / 2), 8);
 
   currentOrder = null;
   holding = null;
   selectedIngredients = [];
+  moveTarget = null;
   clearHeldMesh();
 
   tables.forEach(t => t.occupied = false);
   resetOven();
 
-  player.group.position.set(0, 0, 5.2);
-  player.group.rotation.z = 0;
-  player.yaw = Math.PI;   // face into the cafe (toward -Z)
-  player.pitch = 0;
+  player.group.position.set(0, 0, 4.5);
+  player.facing = Math.PI;
+  player.ref.rig.rotation.set(0, Math.PI, 0);
 
-  karen.active = false;
-  karen.phase = "hidden";
-  karen.timer = 0;
-  karen.group.visible = false;
-  karen.group.position.copy(entrancePos);
-
+  karen.active = false; karen.phase = "hidden"; karen.timer = 0;
+  karen.group.visible = false; karen.group.position.copy(entrancePos);
   document.getElementById("karenSpeech").style.display = "none";
 
   newCustomer();
@@ -857,649 +1016,375 @@ function newCustomer() {
   customer.following = false;
   customer.seated = false;
   customer.tableIndex = null;
-  customer.group.visible = true;
-  customer.group.position.copy(entrancePos);
 
-  const pics = CHARACTER_ART.customers;
-  setCustomerArt(pics[Math.floor(Math.random() * pics.length)]);
+  reskinCustomer();                 // build a fresh, distinct 3D patron
+  customer.group.position.copy(entrancePos);
+  customer.group.visible = true;
+  customer.group.rotation.y = Math.PI; // face into the cafe
 
   currentOrder = null;
   holding = null;
   clearHeldMesh();
-
-  message = "A customer arrived. Walk to them and press E.";
+  message = "A customer arrived at the door! Walk over and press E.";
 }
 
 function createOrder() {
   const pool = recipes.filter(r => r.ingredients.every(i => unlockedIngredients.includes(i)));
   const recipe = pool[Math.floor(Math.random() * pool.length)];
-
-  const timeLimit = Math.max(13, recipe.timeLimit - Math.floor(day / 2));
-
-  currentOrder = {
-    recipe,
-    timeLeft: timeLimit,
-    maxTime: timeLimit
-  };
-
-  message = "Order received: " + recipe.name + ". Check the order box.";
+  const timeLimit = Math.max(14, recipe.timeLimit - Math.floor(day / 2) * 2);
+  currentOrder = { recipe, timeLeft: timeLimit, maxTime: timeLimit, gotIngredients: false, prepped: false, baked: !recipe.needsOven };
+  message = "Order up: " + recipe.emoji + " " + recipe.name + "! Head to the pantry.";
 }
 
 function resetOven() {
-  if (oven.foodMesh) {
-    scene.remove(oven.foodMesh);
-  }
-
-  oven = {
-    item: null,
-    cooking: false,
-    ready: false,
-    burned: false,
-    cookTimer: 0,
-    burnTimer: 0,
-    burnMistakeCounted: false,
-    foodMesh: null
-  };
+  if (oven.foodMesh) scene.remove(oven.foodMesh);
+  oven = { item: null, cooking: false, ready: false, burned: false, cookTimer: 0, burnTimer: 0, burnMistakeCounted: false, foodMesh: null, glow: oven.glow };
+  if (oven.glow) oven.glow.material.emissive.setHex(0x000000);
 }
 
 function addMistake(reason) {
   if (state === "fired" || state === "dayclear" || state === "karenCutscene") return;
-
   mistakes++;
-  message = reason + " Karen's rage increased!";
-
+  message = "❌ " + reason + " Karen's rage rises!";
+  popup("✗", player.group.position, "#ef476f");
   updateRageMeter();
-
-  if (mistakes >= RAGE_LIMIT) {
-    startKarenCutscene();
-  }
+  if (mistakes >= RAGE_LIMIT) startKarenCutscene();
 }
 
 function updateRageMeter() {
   const pct = Math.min(1, mistakes / RAGE_LIMIT);
-
   document.getElementById("rageInner").style.width = (pct * 100) + "%";
-  document.getElementById("rageText").textContent = mistakes + " / " + RAGE_LIMIT + " mistakes";
+  document.getElementById("rageText").textContent = mistakes + " / " + RAGE_LIMIT + " strikes";
+  let faces = "";
+  for (let i = 0; i < RAGE_LIMIT; i++) faces += i < mistakes ? "😡" : "🙂";
+  document.getElementById("rageFaces").textContent = faces;
 }
 
+/* ---------- Interactions ---------- */
 function interact() {
   if (state !== "playing") return;
+  const pp = player.group.position;
+  moveTarget = null; // stop auto-walk when interacting
 
-  const playerPos = player.group.position;
-
-  if (customer.active && !customer.following && !customer.seated) {
-    if (playerPos.distanceTo(customer.group.position) < 1.8) {
-      customer.following = true;
-      message = "Lead the customer to an empty table, then press E.";
-      return;
-    }
+  if (customer.active && !customer.following && !customer.seated && pp.distanceTo(customer.group.position) < 2.0) {
+    customer.following = true;
+    message = "Lead them to an empty table, then press E.";
+    return;
   }
-
   if (customer.active && customer.following) {
     for (let i = 0; i < tables.length; i++) {
-      if (!tables[i].occupied && playerPos.distanceTo(tables[i].pos) < 1.6) {
-        seatCustomer(i);
-        return;
-      }
+      if (!tables[i].occupied && pp.distanceTo(tables[i].pos) < 2.0) { seatCustomer(i); return; }
     }
   }
-
-  if (nearStation("pantry")) {
-    openPantry();
-    return;
-  }
-
-  if (nearStation("prep")) {
-    openPrep();
-    return;
-  }
-
-  if (nearStation("oven")) {
-    useOven();
-    return;
-  }
-
-  if (nearStation("trash")) {
-    useTrash();
-    return;
-  }
+  if (nearStation("pantry")) { openPantry(); return; }
+  if (nearStation("prep")) { openPrep(); return; }
+  if (nearStation("oven")) { useOven(); return; }
+  if (nearStation("trash")) { useTrash(); return; }
 
   if (customer.active && customer.seated && currentOrder) {
     const table = tables[customer.tableIndex];
-
-    if (playerPos.distanceTo(table.pos) < 1.7) {
-      serveTable();
-      return;
-    }
+    if (pp.distanceTo(table.pos) < 2.0) { serveTable(); return; }
   }
-
-  message = "Move closer to a customer, table, or station.";
+  message = "Walk closer to a customer, table, or glowing station.";
 }
 
 function nearStation(name) {
-  return player.group.position.distanceTo(stationPositions[name]) < 1.7;
+  return player.group.position.distanceTo(stationPositions[name]) < 2.0;
 }
 
 function seatCustomer(index) {
-  const table = tables[index];
-
-  table.occupied = true;
+  const t = tables[index];
+  t.occupied = true;
   customer.following = false;
   customer.seated = true;
   customer.tableIndex = index;
-  customer.group.position.set(table.pos.x, 0, table.pos.z - 1.05);
-
+  customer.group.position.set(t.pos.x, 0, t.pos.z - 1.15);
+  popup("😊", customer.group.position, "#9ae6b4");
   createOrder();
 }
 
 function openPantry() {
-  if (!customer.seated || !currentOrder) {
-    message = "Seat the customer before choosing ingredients.";
-    return;
-  }
-
-  if (holding) {
-    message = "Your hands are already full.";
-    return;
-  }
-
+  if (!customer.seated || !currentOrder) { message = "Seat a customer before grabbing ingredients."; return; }
+  if (holding) { message = "Your hands are full!"; return; }
   selectedIngredients = [];
   state = "pantry";
-  releasePointer();
-
-  document.getElementById("neededText").textContent =
-    "Needed: " + currentOrder.recipe.ingredients.join(", ");
-
+  document.getElementById("neededText").textContent = "Needed: " + currentOrder.recipe.ingredients.join(", ");
   const box = document.getElementById("ingredientButtons");
   box.innerHTML = "";
-
   unlockedIngredients.forEach(item => {
     const btn = document.createElement("button");
-    btn.textContent = item;
-
+    btn.innerHTML = (INGREDIENT_EMOJI[item] || "") + " " + item;
     btn.onclick = () => {
       if (selectedIngredients.includes(item)) {
         selectedIngredients = selectedIngredients.filter(i => i !== item);
         btn.classList.remove("selected");
-      } else {
-        selectedIngredients.push(item);
-        btn.classList.add("selected");
-      }
+      } else { selectedIngredients.push(item); btn.classList.add("selected"); }
     };
-
     box.appendChild(btn);
   });
-
   document.getElementById("pantryModal").style.display = "flex";
 }
 
 function closePantry() {
   if (state === "pantry") state = "playing";
   document.getElementById("pantryModal").style.display = "none";
-  message = "Pantry closed.";
 }
 
 function finishPantry() {
   const needed = [...currentOrder.recipe.ingredients].sort();
   const chosen = [...selectedIngredients].sort();
-
-  const correct =
-    needed.length === chosen.length &&
-    needed.every((item, i) => item === chosen[i]);
-
-  if (!correct) {
-    addMistake("Wrong ingredients.");
-    closePantry();
-    return;
-  }
-
-  holding = {
-    type: "ingredients",
-    recipe: currentOrder.recipe,
-    ingredients: [...selectedIngredients],
-    burned: false
-  };
-
+  const ok = needed.length === chosen.length && needed.every((x, i) => x === chosen[i]);
+  if (!ok) { addMistake("Wrong ingredients."); closePantry(); return; }
+  holding = { type: "ingredients", recipe: currentOrder.recipe, burned: false };
+  currentOrder.gotIngredients = true;
   createHeldMesh("ingredients");
   closePantry();
-  message = "Ingredients collected. Go to the prep station.";
+  message = "Got it! Now hit the prep station 🔪";
 }
 
 function openPrep() {
-  if (!customer.seated || !currentOrder) {
-    message = "Seat the customer first.";
-    return;
-  }
-
-  if (!holding || holding.type !== "ingredients") {
-    message = "Get the correct ingredients from the pantry first.";
-    return;
-  }
-
+  if (!holding || holding.type !== "ingredients") { message = "Grab the right ingredients from the pantry first."; return; }
   state = "prep";
-  releasePointer();
-
-  prepGame = {
-    type: currentOrder.recipe.prepTask,
-    marker: 0,
-    markerDir: 1,
-    fill: 0,
-    fillDir: 1,
-    hits: 0,
-    mixCount: 0,
-    lastMixKey: "",
-    placed: 0
-  };
-
+  prepGame = { type: currentOrder.recipe.prepTask, marker: 0, markerDir: 1, fill: 0, fillDir: 1, hits: 0, mixCount: 0, lastMixKey: "", placed: 0 };
   showPrepScreen();
 }
 
 function showPrepScreen() {
-  const content = document.getElementById("prepContent");
+  const c = document.getElementById("prepContent");
   const type = prepGame.type;
-
-  if (type === "cutting") {
-    content.innerHTML = `
-      <p>Cutting minigame: press SPACE when the red marker is inside the green zone.</p>
-      <div class="prepBar">
-        <div class="greenZone"></div>
-        <div id="cutMarker" class="marker"></div>
-      </div>
-      <h3 id="prepProgress">Good cuts: 0/3</h3>
-      <p>Press Escape to cancel.</p>
-    `;
-  }
-
-  if (type === "mixing") {
-    content.innerHTML = `
-      <p>Mixing minigame: alternate pressing A and D.</p>
-      <h1>🥣</h1>
-      <h3 id="prepProgress">Mixing: 0/10</h3>
-      <p>Press Escape to cancel.</p>
-    `;
-  }
-
-  if (type === "measuring") {
-    content.innerHTML = `
-      <p>Measuring minigame: press SPACE when the blue liquid is in the green target zone.</p>
-      <div class="measureCup">
-        <div class="measureTarget"></div>
-        <div id="measureFill" class="measureFill"></div>
-      </div>
-      <p>Press Escape to cancel.</p>
-    `;
-  }
-
-  if (type === "tray") {
-    content.innerHTML = `
-      <p>Cookie tray minigame: press SPACE or click the button to place 6 cookies.</p>
-      <h1>🍪</h1>
-      <h3 id="prepProgress">Cookies placed: 0/6</h3>
-      <button class="main" onclick="placeCookie()">Place Cookie</button>
-      <p>Press Escape to cancel.</p>
-    `;
-  }
-
+  if (type === "cutting") c.innerHTML = `<p>Press <b>SPACE</b> when the marker is in the green zone. Land <b>3</b> good cuts!</p>
+    <div class="prepBar"><div class="greenZone"></div><div id="cutMarker" class="marker"></div></div>
+    <h3 id="prepProgress">Good cuts: 0/3</h3><p style="opacity:.6">Esc to cancel</p>`;
+  if (type === "mixing") c.innerHTML = `<p>Alternate pressing <b>A</b> and <b>D</b> to stir!</p>
+    <div class="bigEmoji" id="mixBowl">🥣</div><h3 id="prepProgress">Stirs: 0/10</h3><p style="opacity:.6">Esc to cancel</p>`;
+  if (type === "measuring") c.innerHTML = `<p>Press <b>SPACE</b> when the liquid hits the green target.</p>
+    <div class="measureCup"><div class="measureTarget"></div><div id="measureFill" class="measureFill"></div></div><p style="opacity:.6">Esc to cancel</p>`;
+  if (type === "tray") c.innerHTML = `<p>Press <b>SPACE</b> (or click) to place <b>6</b> cookies on the tray.</p>
+    <div class="bigEmoji" id="trayEmoji">🍪</div><h3 id="prepProgress">Cookies: 0/6</h3>
+    <button class="main" onclick="placeCookie()">Place Cookie 🍪</button><p style="opacity:.6">Esc to cancel</p>`;
   document.getElementById("prepModal").style.display = "flex";
 }
 
 function cancelPrep() {
   if (state === "prep") state = "playing";
   document.getElementById("prepModal").style.display = "none";
-  message = "Prep cancelled.";
+  message = "Prep cancelled — go back when ready.";
 }
 
 function handlePrepKey(key) {
-  if (key === "escape") {
-    cancelPrep();
-    return;
-  }
-
+  if (key === "escape") { cancelPrep(); return; }
   if (prepGame.type === "cutting" && key === " ") {
     if (prepGame.marker >= 0.42 && prepGame.marker <= 0.58) {
       prepGame.hits++;
       document.getElementById("prepProgress").textContent = "Good cuts: " + prepGame.hits + "/3";
-
-      if (prepGame.hits >= 3) {
-        finishPrep();
-      }
-    } else {
-      addMistake("Bad cut.");
-    }
+      if (prepGame.hits >= 3) finishPrep();
+    } else addMistake("Bad cut.");
   }
-
   if (prepGame.type === "measuring" && key === " ") {
-    if (prepGame.fill >= 0.55 && prepGame.fill <= 0.72) {
-      finishPrep();
-    } else {
-      addMistake("Wrong measurement.");
-    }
+    if (prepGame.fill >= 0.55 && prepGame.fill <= 0.72) finishPrep();
+    else addMistake("Wrong measurement.");
   }
-
-  if (prepGame.type === "mixing") {
-    if (key !== "a" && key !== "d") return;
-
+  if (prepGame.type === "mixing" && (key === "a" || key === "d")) {
     if (prepGame.lastMixKey === "" || key !== prepGame.lastMixKey) {
       prepGame.lastMixKey = key;
       prepGame.mixCount++;
-      document.getElementById("prepProgress").textContent = "Mixing: " + prepGame.mixCount + "/10";
-
-      if (prepGame.mixCount >= 10) {
-        finishPrep();
-      }
+      const bowl = document.getElementById("mixBowl");
+      if (bowl) bowl.style.transform = `rotate(${key === "a" ? -18 : 18}deg)`;
+      document.getElementById("prepProgress").textContent = "Stirs: " + prepGame.mixCount + "/10";
+      if (prepGame.mixCount >= 10) finishPrep();
     }
   }
-
-  if (prepGame.type === "tray" && key === " ") {
-    placeCookie();
-  }
+  if (prepGame.type === "tray" && key === " ") placeCookie();
 }
 
 function placeCookie() {
   if (state !== "prep") return;
-
   prepGame.placed++;
-  document.getElementById("prepProgress").textContent = "Cookies placed: " + prepGame.placed + "/6";
-
-  if (prepGame.placed >= 6) {
-    finishPrep();
-  }
+  document.getElementById("prepProgress").textContent = "Cookies: " + prepGame.placed + "/6";
+  if (prepGame.placed >= 6) finishPrep();
 }
 
 function finishPrep() {
   document.getElementById("prepModal").style.display = "none";
-
+  currentOrder.prepped = true;
+  popup("👌", player.group.position, "#ffd166");
   if (currentOrder.recipe.needsOven) {
-    holding = {
-      type: "rawFood",
-      recipe: currentOrder.recipe,
-      burned: false
-    };
-
+    holding = { type: "rawFood", recipe: currentOrder.recipe, burned: false };
     createHeldMesh("rawFood");
-    message = "Prep finished. Put the food in the oven.";
+    message = "Prepped! Pop it in the oven 🔥";
   } else {
-    holding = {
-      type: "cookedFood",
-      recipe: currentOrder.recipe,
-      burned: false
-    };
-
+    holding = { type: "cookedFood", recipe: currentOrder.recipe, burned: false };
     createHeldMesh("cookedFood");
-    message = "Prep finished. Serve it to the table.";
+    message = "Drink's ready! Serve it to the table 🍽️";
   }
-
   state = "playing";
 }
 
 function useOven() {
-  if (!customer.seated || !currentOrder) {
-    message = "Seat the customer first.";
-    return;
-  }
-
   if (holding && holding.type === "rawFood") {
-    if (oven.item) {
-      message = "The oven is already full.";
-      return;
-    }
-
+    if (oven.item) { message = "The oven is already full!"; return; }
     startOvenCutscene(holding.recipe);
-    holding = null;
-    clearHeldMesh();
+    holding = null; clearHeldMesh();
     return;
   }
-
   if (!holding && oven.item && (oven.ready || oven.burned)) {
-    holding = {
-      type: "cookedFood",
-      recipe: oven.item,
-      burned: oven.burned
-    };
-
+    holding = { type: "cookedFood", recipe: oven.item, burned: oven.burned };
     createHeldMesh("cookedFood");
-
-    if (oven.burned) {
-      message = "You picked up burned food. Trash it, don't serve it!";
-    } else {
-      message = "Food is ready. Serve it to the customer.";
-    }
-
-    if (oven.foodMesh) {
-      scene.remove(oven.foodMesh);
-      oven.foodMesh = null;
-    }
-
-    oven.item = null;
-    oven.cooking = false;
-    oven.ready = false;
-    oven.burned = false;
-    oven.cookTimer = 0;
-    oven.burnTimer = 0;
+    message = oven.burned ? "Yuck — that's burned. Trash it!" : "Fresh out the oven! Serve it 🍽️";
+    if (oven.foodMesh) { scene.remove(oven.foodMesh); oven.foodMesh = null; }
+    if (oven.glow) oven.glow.material.emissive.setHex(0x000000);
+    oven.item = null; oven.cooking = false; oven.ready = false; oven.burned = false; oven.cookTimer = 0; oven.burnTimer = 0;
     return;
   }
-
-  if (oven.item && oven.cooking) {
-    message = "Still cooking.";
-    return;
-  }
-
-  message = "Nothing to do at the oven.";
+  if (oven.item && oven.cooking) { message = "Still baking… don't let it burn!"; return; }
+  message = "Nothing to do at the oven right now.";
 }
 
 function startOvenCutscene(recipe) {
   state = "cutscene";
   cutscene.timer = 0;
   cutscene.recipe = recipe;
-
-  cutscene.mesh = box(0.9, 0.18, 0.55, 0xd9a441);
+  cutscene.mesh = box(0.7, 0.16, 0.5, 0xd9a441);
   cutscene.mesh.position.copy(player.group.position);
-  cutscene.mesh.position.y = 1.6;
+  cutscene.mesh.position.y = 1.4;
   scene.add(cutscene.mesh);
-
-  message = "Putting food into the oven...";
+  message = "Sliding it into the oven…";
 }
 
 function beginCooking(recipe) {
   oven.item = recipe;
-  oven.cooking = true;
-  oven.ready = false;
-  oven.burned = false;
-  oven.cookTimer = 0;
-  oven.burnTimer = 0;
-  oven.burnMistakeCounted = false;
-
-  oven.foodMesh = box(0.8, 0.16, 0.5, 0xe85d04);
-  oven.foodMesh.position.set(stationPositions.oven.x, 0.9, stationPositions.oven.z + 0.7);
+  oven.cooking = true; oven.ready = false; oven.burned = false;
+  oven.cookTimer = 0; oven.burnTimer = 0; oven.burnMistakeCounted = false;
+  oven.foodMesh = box(0.7, 0.16, 0.5, 0xe85d04);
+  oven.foodMesh.position.set(stationPositions.oven.x, 0.95, stationPositions.oven.z + 0.66);
   scene.add(oven.foodMesh);
-
+  if (oven.glow) oven.glow.material.emissive.setHex(0xff5500);
   state = "playing";
-  message = recipe.name + " is cooking. Watch the oven!";
+  message = recipe.emoji + " " + recipe.name + " is baking — watch the oven!";
 }
 
 function serveTable() {
-  if (!holding) {
-    message = "Bring the finished food to the table.";
-    return;
-  }
-
-  if (holding.type !== "cookedFood") {
-    failCurrentOrder("You served food before it was ready.");
-    return;
-  }
-
-  if (holding.burned) {
-    failCurrentOrder("You served burned food.");
-    return;
-  }
-
-  if (holding.recipe.name !== currentOrder.recipe.name) {
-    failCurrentOrder("You served the wrong order.");
-    return;
-  }
-
-  if (currentOrder.timeLeft <= 0) {
-    failCurrentOrder("The order was served late.");
-    return;
-  }
+  if (!holding) { message = "Bring the finished food to the table."; return; }
+  if (holding.type !== "cookedFood") { failCurrentOrder("Served before it was ready."); return; }
+  if (holding.burned) { failCurrentOrder("Served burned food."); return; }
+  if (holding.recipe.name !== currentOrder.recipe.name) { failCurrentOrder("Served the wrong order."); return; }
+  if (currentOrder.timeLeft <= 0) { failCurrentOrder("Served too late."); return; }
 
   ordersDone++;
+  // tip scales with how fast you were
+  const speedBonus = Math.round((currentOrder.timeLeft / currentOrder.maxTime) * 4);
+  const tip = currentOrder.recipe.tip + speedBonus;
+  money += tip; dayTips += tip;
+  popup("+$" + tip, tables[customer.tableIndex].pos, "#9ae6b4");
 
   tables[customer.tableIndex].occupied = false;
-  customer.active = false;
-  customer.following = false;
-  customer.seated = false;
-  customer.tableIndex = null;
+  customer.active = false; customer.following = false; customer.seated = false; customer.tableIndex = null;
   customer.group.visible = false;
+  currentOrder = null; holding = null; clearHeldMesh();
+  message = "✅ Served! Nice work, chef. +$" + tip + " tip";
 
-  currentOrder = null;
-  holding = null;
-  clearHeldMesh();
-
-  message = "Order served successfully.";
-
-  if (ordersDone >= ordersNeeded) {
-    completeDay();
-  } else {
-    setTimeout(() => {
-      if (state === "playing") newCustomer();
-    }, 900);
-  }
+  if (ordersDone >= ordersNeeded) completeDay();
+  else setTimeout(() => { if (state === "playing") newCustomer(); }, 900);
 }
 
 function failCurrentOrder(reason) {
   addMistake(reason);
-
   if (mistakes >= RAGE_LIMIT) return;
-
-  if (customer.active && customer.seated && customer.tableIndex !== null) {
-    tables[customer.tableIndex].occupied = false;
-  }
-
-  customer.active = false;
-  customer.following = false;
-  customer.seated = false;
-  customer.tableIndex = null;
+  if (customer.active && customer.seated && customer.tableIndex !== null) tables[customer.tableIndex].occupied = false;
+  customer.active = false; customer.following = false; customer.seated = false; customer.tableIndex = null;
   customer.group.visible = false;
-
-  currentOrder = null;
-  holding = null;
-  clearHeldMesh();
-  resetOven();
-
+  currentOrder = null; holding = null; clearHeldMesh(); resetOven();
   message = reason + " The customer left upset.";
-
-  setTimeout(() => {
-    if (state === "playing") {
-      newCustomer();
-    }
-  }, 900);
+  setTimeout(() => { if (state === "playing") newCustomer(); }, 900);
 }
 
 function useTrash() {
-  if (!holding) {
-    message = "Nothing to throw away.";
-    return;
+  if (!holding) { message = "Nothing to throw away."; return; }
+  const wasBurned = holding.type === "cookedFood" && holding.burned;
+  holding = null; clearHeldMesh();
+  if (wasBurned) {
+    // trashing burned food is the right call — no extra penalty
+    message = "Tossed the burnt one. Remake it!";
+    popup("🗑️", stationPositions.trash, "#ffd166");
+  } else {
+    addMistake("You wasted good food.");
   }
-
-  holding = null;
-  clearHeldMesh();
-
-  addMistake("You threw food away.");
 }
 
 function completeDay() {
   state = "dayclear";
-  releasePointer();
-
-  if (mistakes < RAGE_LIMIT) {
-    if (ingredientUnlocks.length > 0) {
-      const item = ingredientUnlocks.shift();
-      unlockedIngredients.push(item);
-      unlockMessage = "You survived with under 5 mistakes! You unlocked: " + item;
-    } else {
-      unlockMessage = "You survived the day! Everything is already unlocked.";
-    }
+  // star rating from mistakes
+  const stars = mistakes === 0 ? 3 : mistakes <= 2 ? 2 : 1;
+  document.getElementById("dayStars").textContent = "⭐".repeat(stars) + "☆".repeat(3 - stars);
+  if (ingredientUnlocks.length > 0) {
+    const item = ingredientUnlocks.shift();
+    unlockedIngredients.push(item);
+    document.getElementById("unlockText").innerHTML = "You unlocked a new ingredient: <b>" + (INGREDIENT_EMOJI[item] || "") + " " + item + "</b>!";
   } else {
-    unlockMessage = "Karen fired you.";
+    document.getElementById("unlockText").textContent = "Everything is unlocked — you're a true bakery boss!";
   }
-
-  document.getElementById("unlockText").textContent = unlockMessage;
+  document.getElementById("tipText").textContent = "💰 Tips earned today: $" + dayTips + "   (Total: $" + money + ")";
   document.getElementById("dayClear").style.display = "flex";
 }
 
+function nextDay() {
+  day++;
+  document.getElementById("dayClear").style.display = "none";
+  startDay();
+}
+
+/* ---------- Karen cutscene ---------- */
 function startKarenCutscene() {
   hideMenus();
-  releasePointer();
-
   state = "karenCutscene";
-  message = "Oh no... Karen heard about all the mistakes.";
-
-  if (customer.group) {
-    customer.group.visible = false;
-  }
-
-  customer.active = false;
-  customer.following = false;
-  customer.seated = false;
-  customer.tableIndex = null;
-
-  karen.active = true;
-  karen.phase = "entering";
-  karen.timer = 0;
-
-  karen.group.visible = true;
-  karen.group.position.copy(entrancePos);
-
+  message = "Uh oh… Karen heard about the mistakes.";
+  if (customer.group) customer.group.visible = false;
+  customer.active = false; customer.following = false; customer.seated = false; customer.tableIndex = null;
+  karen.active = true; karen.phase = "entering"; karen.timer = 0;
+  karen.group.visible = true; karen.group.position.copy(entrancePos);
   document.getElementById("karenSpeech").style.display = "none";
 }
 
 function updateKarenCutscene(dt) {
   karen.timer += dt;
-
-  const karenPos = karen.group.position;
-  const playerPos = player.group.position;
+  const kp = karen.group.position;
+  const pp = player.group.position;
 
   if (karen.phase === "entering") {
-    const target = playerPos.clone();
-    target.z += 1.2;
-
-    const dir = target.clone().sub(karenPos);
-    const d = dir.length();
-
+    const target = pp.clone(); target.z += 1.6;
+    const dir = target.clone().sub(kp); const d = dir.length();
+    if (d > 0.25) {
+      dir.normalize();
+      kp.add(dir.multiplyScalar(4.2 * dt));
+      karen.group.rotation.y = Math.atan2(dir.x, dir.z); // stomp toward you
+      animateWalk(karen.ref, dt, true, 1.4);             // angry stride
+    } else {
+      karen.phase = "yelling"; karen.timer = 0;
+      animateWalk(karen.ref, dt, false);
+      document.getElementById("karenSpeech").style.display = "block";
+      message = "Karen: YOU'RE FIRED!";
+    }
+  } else if (karen.phase === "yelling") {
+    // furious little shake while she yells
+    karen.ref.rig.rotation.z = Math.sin(karen.timer * 30) * 0.05;
+    if (karen.timer >= 2.0) {
+      karen.ref.rig.rotation.z = 0;
+      document.getElementById("karenSpeech").style.display = "none";
+      karen.phase = "sadExit"; karen.timer = 0;
+      message = "You shuffle out of the cafe…";
+    }
+  } else if (karen.phase === "sadExit") {
+    const exit = entrancePos.clone();
+    const dir = exit.clone().sub(pp); const d = dir.length();
     if (d > 0.2) {
       dir.normalize();
-      karenPos.add(dir.multiplyScalar(3.2 * dt));
-      karen.group.rotation.y = Math.atan2(dir.x, dir.z);
+      pp.add(dir.multiplyScalar(3.0 * dt));
+      player.facing = Math.atan2(dir.x, dir.z);
+      player.ref.rig.rotation.y = player.facing;
+      player.ref.rig.rotation.z = Math.sin(karen.timer * 9) * 0.07; // dejected slump
+      animateWalk(player.ref, dt, true);
     } else {
-      karen.phase = "yelling";
-      karen.timer = 0;
-      document.getElementById("karenSpeech").style.display = "block";
-      message = "Karen says: you're fired!";
-    }
-  }
-
-  else if (karen.phase === "yelling") {
-    if (karen.timer >= 2.0) {
-      document.getElementById("karenSpeech").style.display = "none";
-      karen.phase = "sadExit";
-      karen.timer = 0;
-      message = "You sadly walk out of the cafe...";
-    }
-  }
-
-  else if (karen.phase === "sadExit") {
-    const exit = entrancePos.clone();
-    const dir = exit.clone().sub(player.group.position);
-    const d = dir.length();
-
-    if (d > 0.15) {
-      dir.normalize();
-      player.group.position.add(dir.multiplyScalar(2.4 * dt));
-      player.group.rotation.y = Math.atan2(dir.x, dir.z);
-      player.group.rotation.z = Math.sin(karen.timer * 8) * 0.06;
-    } else {
-      player.group.rotation.z = 0;
+      player.ref.rig.rotation.z = 0;
       finishKarenFiring();
     }
   }
@@ -1508,223 +1393,162 @@ function updateKarenCutscene(dt) {
 function finishKarenFiring() {
   karen.group.visible = false;
   document.getElementById("karenSpeech").style.display = "none";
-
-  firePlayer("Karen reached 5/5 rage and fired you.");
+  firePlayer("Karen hit 5/5 rage and fired you.");
 }
 
 function firePlayer(reason) {
   state = "fired";
-  firedReason = reason;
-
   document.getElementById("firedReason").textContent = reason;
-  document.getElementById("survivedText").textContent = "You survived to Day " + day;
+  document.getElementById("survivedText").textContent = "You survived to Day " + day + " · $" + money + " in tips";
   document.getElementById("gameOver").style.display = "flex";
 }
 
 function restartGame() {
-  day = 1;
+  day = 1; money = 0;
   unlockedIngredients = ["Coffee Beans", "Bread"];
   ingredientUnlocks = ["Milk", "Cheese", "Flour", "Sugar", "Butter", "Chocolate Chips"];
-
   document.getElementById("gameOver").style.display = "none";
   document.getElementById("dayClear").style.display = "none";
-
   startDay();
 }
 
 function hideMenus() {
-  document.getElementById("pantryModal").style.display = "none";
-  document.getElementById("prepModal").style.display = "none";
-  document.getElementById("gameOver").style.display = "none";
-  document.getElementById("dayClear").style.display = "none";
+  ["pantryModal", "prepModal", "gameOver", "dayClear"].forEach(id => document.getElementById(id).style.display = "none");
 }
 
+/* ---------- Held item (on a tray you can see) ---------- */
 function createHeldMesh(type) {
   clearHeldMesh();
-
-  if (type === "ingredients") {
-    heldMesh = box(0.75, 0.42, 0.5, 0x8a5a35);
-  }
-
-  if (type === "rawFood") {
-    heldMesh = box(0.8, 0.16, 0.5, 0xe9c46a);
-  }
-
-  if (type === "cookedFood") {
-    const color = holding.burned ? 0x111111 : 0xd9a441;
-    heldMesh = box(0.75, 0.16, 0.5, color);
-  }
-
-  // First-person: hold the item low and in front, like carrying a tray.
-  // The group's yaw matches the look direction, so +Z is straight ahead.
-  heldMesh.position.set(0, player.eyeHeight - 0.55, 0.7);
-  player.group.add(heldMesh);
+  const g = new THREE.Group();
+  // tray
+  const tray = box(0.7, 0.05, 0.5, 0xb5895a);
+  g.add(tray);
+  let food;
+  if (type === "ingredients") food = box(0.5, 0.34, 0.36, 0x8a5a35);
+  else if (type === "rawFood") food = box(0.55, 0.14, 0.4, 0xe9c46a);
+  else food = box(0.55, 0.16, 0.4, holding && holding.burned ? 0x1a1a1a : 0xd9a441);
+  food.position.y = 0.2;
+  g.add(food);
+  g.position.set(0, 1.15, 0.6); // out in front of the chef's hands
+  player.ref.rig.add(g);
+  heldMesh = g;
 }
 
 function clearHeldMesh() {
-  if (heldMesh) {
-    player.group.remove(heldMesh);
-    heldMesh = null;
-  }
+  if (heldMesh) { player.ref.rig.remove(heldMesh); heldMesh = null; }
 }
 
+/* ===================================================================
+   UPDATE LOOP
+   =================================================================== */
 function update(dt) {
   if (state === "playing") {
     updatePlayer(dt);
     updateCustomer(dt);
     updateOrderTimer(dt);
     updateOven(dt);
-  }
-
-  if (state === "prep") {
+  } else if (state === "prep") {
     updatePrep(dt);
-  }
-
-  if (state === "cutscene") {
+  } else if (state === "cutscene") {
     updateCutscene(dt);
-  }
-
-  if (state === "karenCutscene") {
+  } else if (state === "karenCutscene") {
     updateKarenCutscene(dt);
   }
 
-  updateCamera();
-  updateBillboards();
+  updateStationFeedback();
+  updateCamera(dt);
+  updateSteam(dt);
+  updatePopups(dt);
   updateHUD();
 }
 
-// Make each character sprite face the camera fully (tilting back toward the
-// steep top-down view so it reads as a standing card, not a flat slab on the
-// floor) while cancelling out the parent group's walking yaw.
-function updateBillboards() {
-  for (let i = 0; i < billboards.length; i++) {
-    const mesh = billboards[i];
-    if (!mesh.parent) continue;
-
-    // Point the sprite's +Z (its face) straight at the camera. Because the
-    // camera sits high above and behind, this tilts the card back so the art
-    // stays fully visible instead of foreshortening into the floor.
-    mesh.parent.getWorldPosition(_bbWorldPos);
-    _bbLook.copy(camera.position).sub(_bbWorldPos).normalize();
-    _bbYaw = Math.atan2(_bbLook.x, _bbLook.z);            // turn to face camera
-    _bbPitch = Math.asin(THREE.MathUtils.clamp(_bbLook.y, -1, 1)); // lean back
-
-    // World orientation = yaw about Y, then lean about X. Convert to local by
-    // subtracting the parent's yaw (the only rotation the parent applies).
-    mesh.rotation.set(_bbPitch, _bbYaw - mesh.parent.rotation.y, 0, "YXZ");
-  }
-}
-
 function updatePlayer(dt) {
-  // ----- Look (arrow keys turn/look; mouse-look also feeds player.yaw) -----
-  const turnSpeed = 2.4; // radians/sec
-  if (keys["arrowleft"]) player.yaw += turnSpeed * dt;
-  if (keys["arrowright"]) player.yaw -= turnSpeed * dt;
-  if (keys["arrowup"]) player.pitch += turnSpeed * 0.6 * dt;
-  if (keys["arrowdown"]) player.pitch -= turnSpeed * 0.6 * dt;
+  let mx = 0, mz = 0;
 
-  // clamp pitch so you can't flip over
-  player.pitch = Math.max(-0.9, Math.min(0.9, player.pitch));
+  // keyboard (screen-relative: up = into the scene = -Z)
+  if (keys["w"] || keys["arrowup"]) mz -= 1;
+  if (keys["s"] || keys["arrowdown"]) mz += 1;
+  if (keys["a"] || keys["arrowleft"]) mx -= 1;
+  if (keys["d"] || keys["arrowright"]) mx += 1;
 
-  // ----- Move (relative to facing) -----
-  let forward = 0;
-  let strafe = 0;
+  const usingKeys = mx !== 0 || mz !== 0;
+  if (usingKeys) moveTarget = null;
 
-  if (keys["w"]) forward += 1;
-  if (keys["s"]) forward -= 1;
-  if (keys["d"]) strafe += 1;
-  if (keys["a"]) strafe -= 1;
-
-  if (forward !== 0 || strafe !== 0) {
-    const len = Math.hypot(forward, strafe);
-    forward /= len;
-    strafe /= len;
-
-    // yaw=0 looks toward +Z; forward vector follows yaw.
-    const sin = Math.sin(player.yaw);
-    const cos = Math.cos(player.yaw);
-
-    const moveX = (forward * sin + strafe * cos) * player.speed * dt;
-    const moveZ = (forward * cos - strafe * sin) * player.speed * dt;
-
-    player.group.position.x += moveX;
-    player.group.position.z += moveZ;
-
-    player.walk += dt * 10;
+  // click-to-move
+  if (!usingKeys && moveTarget) {
+    const dx = moveTarget.x - player.group.position.x;
+    const dz = moveTarget.z - player.group.position.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist < 0.25) moveTarget = null;
+    else { mx = dx / dist; mz = dz / dist; }
   }
 
-  player.group.position.x = Math.max(-10, Math.min(10, player.group.position.x));
-  player.group.position.z = Math.max(-7, Math.min(7, player.group.position.z));
+  const moving = mx !== 0 || mz !== 0;
+  if (moving) {
+    const len = Math.hypot(mx, mz);
+    mx /= len; mz /= len;
+    player.group.position.x += mx * player.speed * dt;
+    player.group.position.z += mz * player.speed * dt;
+    player.facing = Math.atan2(mx, mz);
+    player.ref.rig.rotation.y = player.facing;
+  }
 
-  // Keep the anchor's yaw in sync so held food sits in front of the view.
-  player.group.rotation.y = player.yaw;
+  // keep inside the cafe
+  player.group.position.x = Math.max(-10, Math.min(10, player.group.position.x));
+  player.group.position.z = Math.max(-7, Math.min(6.8, player.group.position.z));
+
+  animateWalk(player.ref, dt, moving);
 }
 
 function updateCustomer(dt) {
-  if (!customer.active || !customer.following) return;
+  if (!customer.active || !customer.ref) return;
 
-  const target = player.group.position.clone();
-  target.x -= 0.9;
-  target.z += 0.5;
-
-  const current = customer.group.position;
-  const dir = target.clone().sub(current);
-  const d = dir.length();
-
-  if (d > 0.15) {
-    dir.normalize();
-    current.add(dir.multiplyScalar(3.3 * dt));
-    customer.group.rotation.y = Math.atan2(dir.x, dir.z);
+  let walking = false;
+  if (customer.following) {
+    const target = player.group.position.clone();
+    target.x -= 1.0; target.z += 0.8;
+    const dir = target.clone().sub(customer.group.position);
+    const d = dir.length();
+    if (d > 0.3) {
+      dir.normalize();
+      customer.group.position.add(dir.multiplyScalar(3.6 * dt));
+      customer.group.rotation.y = Math.atan2(dir.x, dir.z);
+      walking = true;
+    }
   }
+  animateWalk(customer.ref, dt, walking);
 }
 
 function updateOrderTimer(dt) {
   if (!currentOrder || !customer.seated) return;
-
   currentOrder.timeLeft -= dt;
-
-  if (currentOrder.timeLeft <= 0) {
-    currentOrder.timeLeft = 0;
-    failCurrentOrder("The customer waited too long.");
-  }
+  if (currentOrder.timeLeft <= 0) { currentOrder.timeLeft = 0; failCurrentOrder("The customer waited too long."); }
 }
 
 function updateOven(dt) {
   if (!oven.item) return;
-
   if (oven.cooking) {
     oven.cookTimer += dt;
-
-    if (oven.foodMesh) {
-      oven.foodMesh.material.color.set(0xe85d04);
-    }
-
+    if (oven.foodMesh) oven.foodMesh.material.color.set(0xe85d04);
     if (oven.cookTimer >= oven.item.cookTime) {
-      oven.cooking = false;
-      oven.ready = true;
-      oven.cookTimer = oven.item.cookTime;
-      message = oven.item.name + " is ready! Take it out before it burns.";
-
-      if (oven.foodMesh) {
-        oven.foodMesh.material.color.set(0xf6c453);
-      }
+      oven.cooking = false; oven.ready = true; oven.cookTimer = oven.item.cookTime;
+      message = oven.item.emoji + " " + oven.item.name + " is ready — grab it before it burns!";
+      if (oven.foodMesh) oven.foodMesh.material.color.set(0xf6c453);
+      if (oven.glow) oven.glow.material.emissive.setHex(0xffaa33);
     }
   } else if (oven.ready) {
     oven.burnTimer += dt;
-
+    // pulse the glow as a warning
+    if (oven.glow) {
+      const left = oven.item.burnTime - oven.burnTimer;
+      const pulse = left < 2 ? (0.5 + 0.5 * Math.sin(oven.burnTimer * 14)) : 1;
+      oven.glow.material.emissive.setRGB(pulse, pulse * 0.55, 0.1);
+    }
     if (oven.burnTimer >= oven.item.burnTime) {
-      oven.ready = false;
-      oven.burned = true;
-
-      if (!oven.burnMistakeCounted) {
-        addMistake(oven.item.name + " burned in the oven.");
-        oven.burnMistakeCounted = true;
-      }
-
-      if (oven.foodMesh) {
-        oven.foodMesh.material.color.set(0x111111);
-      }
-
+      oven.ready = false; oven.burned = true;
+      if (!oven.burnMistakeCounted) { addMistake(oven.item.name + " burned in the oven."); oven.burnMistakeCounted = true; }
+      if (oven.foodMesh) oven.foodMesh.material.color.set(0x141414);
+      if (oven.glow) oven.glow.material.emissive.setHex(0x331100);
       message = oven.item.name + " burned! Trash it and remake it.";
     }
   }
@@ -1732,153 +1556,103 @@ function updateOven(dt) {
 
 function updatePrep(dt) {
   if (prepGame.type === "cutting") {
-    prepGame.marker += prepGame.markerDir * dt * 1.25;
-
-    if (prepGame.marker >= 1) {
-      prepGame.marker = 1;
-      prepGame.markerDir = -1;
-    }
-
-    if (prepGame.marker <= 0) {
-      prepGame.marker = 0;
-      prepGame.markerDir = 1;
-    }
-
-    const marker = document.getElementById("cutMarker");
-    if (marker) {
-      marker.style.left = (prepGame.marker * 100) + "%";
-    }
+    prepGame.marker += prepGame.markerDir * dt * 1.3;
+    if (prepGame.marker >= 1) { prepGame.marker = 1; prepGame.markerDir = -1; }
+    if (prepGame.marker <= 0) { prepGame.marker = 0; prepGame.markerDir = 1; }
+    const m = document.getElementById("cutMarker");
+    if (m) m.style.left = (prepGame.marker * 100) + "%";
   }
-
   if (prepGame.type === "measuring") {
-    prepGame.fill += prepGame.fillDir * dt * 0.75;
-
-    if (prepGame.fill >= 1) {
-      prepGame.fill = 1;
-      prepGame.fillDir = -1;
-    }
-
-    if (prepGame.fill <= 0) {
-      prepGame.fill = 0;
-      prepGame.fillDir = 1;
-    }
-
-    const fill = document.getElementById("measureFill");
-    if (fill) {
-      fill.style.height = (prepGame.fill * 100) + "%";
-    }
+    prepGame.fill += prepGame.fillDir * dt * 0.8;
+    if (prepGame.fill >= 1) { prepGame.fill = 1; prepGame.fillDir = -1; }
+    if (prepGame.fill <= 0) { prepGame.fill = 0; prepGame.fillDir = 1; }
+    const f = document.getElementById("measureFill");
+    if (f) f.style.height = (prepGame.fill * 100) + "%";
   }
 }
 
 function updateCutscene(dt) {
   cutscene.timer += dt;
-
-  const start = player.group.position.clone();
-  start.y = 1.6;
-
-  const end = stationPositions.oven.clone();
-  end.y = 1.1;
-  end.z += 0.75;
-
-  const t = Math.min(1, cutscene.timer / 1.7);
-
+  const start = player.group.position.clone(); start.y = 1.4;
+  const end = stationPositions.oven.clone(); end.y = 1.1; end.z += 0.7;
+  const t = Math.min(1, cutscene.timer / 1.4);
   if (cutscene.mesh) {
     cutscene.mesh.position.lerpVectors(start, end, t);
-    cutscene.mesh.rotation.y += dt * 4;
+    cutscene.mesh.position.y += Math.sin(t * Math.PI) * 0.8; // little arc
+    cutscene.mesh.rotation.y += dt * 5;
   }
-
   if (t >= 1) {
-    if (cutscene.mesh) {
-      scene.remove(cutscene.mesh);
-      cutscene.mesh = null;
-    }
-
+    if (cutscene.mesh) { scene.remove(cutscene.mesh); cutscene.mesh = null; }
     beginCooking(cutscene.recipe);
   }
 }
 
-function updateCamera() {
-  const p = player.group.position;
-
-  // Eyes at the chef's head.
-  camera.position.set(p.x, p.y + player.eyeHeight, p.z);
-
-  // Look direction from yaw/pitch (yaw=0 -> +Z).
-  const lookX = p.x + Math.sin(player.yaw) * Math.cos(player.pitch);
-  const lookY = p.y + player.eyeHeight + Math.sin(player.pitch);
-  const lookZ = p.z + Math.cos(player.yaw) * Math.cos(player.pitch);
-
-  camera.lookAt(lookX, lookY, lookZ);
+/* ---------- Station glow when the chef is near, plus a "what's next" hint ---------- */
+function updateStationFeedback() {
+  const pp = player.group.position;
+  for (const name in stationGlows) {
+    const ring = stationGlows[name];
+    const lab = stationLabels[name];
+    const near = pp.distanceTo(stationPositions[name]) < 2.6;
+    const target = near ? 0.85 : 0.0;
+    ring.material.opacity += (target - ring.material.opacity) * 0.2;
+    lab.material.opacity += (target - lab.material.opacity) * 0.2;
+    ring.rotation.z += 0.01; // slow spin
+  }
 }
 
+/* ---------- Camera: smooth third-person isometric follow ---------- */
+const _camTarget = new THREE.Vector3();
+const _camDesired = new THREE.Vector3();
+function updateCamera(dt) {
+  const p = player.group.position;
+  // cozy over-the-shoulder isometric angle
+  _camDesired.set(p.x * 0.4, 12, p.z + 11);
+  camera.position.lerp(_camDesired, 1 - Math.pow(0.001, dt));
+  _camTarget.set(p.x * 0.5, 1.2, p.z - 1);
+  camera.lookAt(_camTarget);
+}
+
+/* ---------- HUD ---------- */
 function updateHUD() {
-  document.getElementById("dayText").textContent =
-    "Day " + day + " | Orders " + ordersDone + "/" + ordersNeeded + " | Mistakes " + mistakes;
+  document.getElementById("dayVal").textContent = day;
+  document.getElementById("orderVal").textContent = ordersDone + "/" + ordersNeeded;
+  document.getElementById("moneyVal").textContent = "$" + money;
 
-  document.getElementById("holdingText").textContent =
-    "Holding: " + getHoldingText();
-
-  document.getElementById("ovenText").textContent =
-    "Oven: " + getOvenText();
-
-  const orderText = document.getElementById("orderText");
-
+  const empty = document.getElementById("orderEmpty");
+  const active = document.getElementById("orderActive");
   if (currentOrder) {
-    orderText.innerHTML =
-      "<b>" + currentOrder.recipe.name + "</b><br>" +
-      "Ingredients: " + currentOrder.recipe.ingredients.join(", ");
+    empty.style.display = "none";
+    active.style.display = "block";
+    document.getElementById("orderName").textContent = currentOrder.recipe.emoji + " " + currentOrder.recipe.name;
+    document.getElementById("orderIngredients").textContent = currentOrder.recipe.ingredients.join(" · ");
+
+    // checklist of steps
+    const steps = [];
+    steps.push(["Ingredients", currentOrder.gotIngredients]);
+    steps.push(["Prep", currentOrder.prepped]);
+    if (currentOrder.recipe.needsOven) steps.push(["Bake", oven.ready || oven.burned || (holding && holding.type === "cookedFood")]);
+    steps.push(["Serve", false]);
+    document.getElementById("orderSteps").innerHTML = steps.map(s =>
+      `<div class="step ${s[1] ? "done" : "todo"}">${s[0]}</div>`).join("");
 
     const pct = currentOrder.timeLeft / currentOrder.maxTime;
     const bar = document.getElementById("timerBarInner");
     bar.style.width = Math.max(0, pct * 100) + "%";
-
-    if (pct > 0.5) bar.style.background = "#57cc99";
-    else if (pct > 0.25) bar.style.background = "#ffd166";
-    else bar.style.background = "#ef476f";
+    bar.style.background = pct > 0.5 ? "#2a9d5c" : pct > 0.25 ? "#ffb703" : "#ef476f";
   } else {
-    orderText.textContent = "Seat a customer to get an order.";
-    document.getElementById("timerBarInner").style.width = "0%";
+    empty.style.display = "block";
+    active.style.display = "none";
+    if (customer.active && !customer.seated) empty.textContent = customer.following ? "Lead them to a table 🪑" : "Greet the customer at the door 🚪";
+    else empty.textContent = "Waiting for the next customer…";
   }
-
   document.getElementById("message").textContent = message;
-
-  updateRageMeter();
 }
 
-function getHoldingText() {
-  if (!holding) return "Nothing";
-  if (holding.type === "ingredients") return "Ingredients";
-  if (holding.type === "rawFood") return "Raw " + holding.recipe.name;
-
-  if (holding.type === "cookedFood") {
-    return holding.burned ? "Burned " + holding.recipe.name : holding.recipe.name;
-  }
-
-  return "Something";
-}
-
-function getOvenText() {
-  if (!oven.item) return "Empty";
-
-  if (oven.cooking) {
-    return "Cooking " + oven.item.name + " " + oven.cookTimer.toFixed(1) + "/" + oven.item.cookTime;
-  }
-
-  if (oven.ready) {
-    const left = Math.max(0, oven.item.burnTime - oven.burnTimer);
-    return oven.item.name + " ready, burns in " + left.toFixed(1);
-  }
-
-  if (oven.burned) return "Burned " + oven.item.name;
-
-  return "Busy";
-}
-
+/* ---------- Render loop ---------- */
 function animate() {
   requestAnimationFrame(animate);
-
   const dt = Math.min(0.04, clock.getDelta());
-
   update(dt);
   renderer.render(scene, camera);
 }
@@ -1889,68 +1663,41 @@ function onResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-window.addEventListener("keydown", e => {
-  const key = e.key.toLowerCase();
-  keys[key] = true;
+/* ---------- Input ---------- */
+const raycaster = new THREE.Raycaster();
+const mouseNDC = new THREE.Vector2();
+const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const _hit = new THREE.Vector3();
 
-  if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) {
-    e.preventDefault();
-  }
+function setupInput() {
+  window.addEventListener("keydown", e => {
+    const key = e.key.toLowerCase();
+    keys[key] = true;
+    if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) e.preventDefault();
 
-  if (state === "prep") {
-    handlePrepKey(key);
-    return;
-  }
+    if (state === "prep") { handlePrepKey(key); return; }
+    if (state === "pantry") { if (key === "escape") closePantry(); return; }
+    if (state === "intro") { if (key === "enter" || key === " ") dismissIntro(); return; }
 
-  if (state === "pantry") {
-    if (key === "escape") closePantry();
-    return;
-  }
+    if (state === "playing" && !e.repeat && (key === "e" || key === " ")) interact();
+    if (state === "dayclear" && !e.repeat && (key === "enter" || key === " ")) nextDay();
+    if (state === "fired" && !e.repeat && key === "r") restartGame();
+  });
+  window.addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
 
-  if (state === "playing" && !e.repeat && (key === "e" || key === " ")) {
-    interact();
-  }
-
-  if (state === "dayclear" && !e.repeat && (key === "enter" || key === " ")) {
-    day++;
-    document.getElementById("dayClear").style.display = "none";
-    startDay();
-  }
-
-  if (state === "fired" && !e.repeat && key === "r") {
-    restartGame();
-  }
-});
-
-window.addEventListener("keyup", e => {
-  keys[e.key.toLowerCase()] = false;
-});
-
-// ----- Mouse look (click to capture the pointer) -----
-const MOUSE_SENS = 0.0022;
-
-renderer.domElement.addEventListener("click", () => {
-  if (state === "playing" && document.pointerLockElement !== renderer.domElement) {
-    renderer.domElement.requestPointerLock();
-  }
-});
-
-document.addEventListener("mousemove", e => {
-  if (document.pointerLockElement !== renderer.domElement) return;
-  if (state !== "playing") return;
-
-  player.yaw -= e.movementX * MOUSE_SENS;
-  player.pitch -= e.movementY * MOUSE_SENS;
-  player.pitch = Math.max(-0.9, Math.min(0.9, player.pitch));
-});
-
-// Release the pointer when leaving the playing state (modals, cutscenes).
-function releasePointer() {
-  if (document.pointerLockElement === renderer.domElement) {
-    document.exitPointerLock();
-  }
+  // click-to-move on the floor
+  renderer.domElement.addEventListener("pointerdown", e => {
+    if (state !== "playing") return;
+    mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouseNDC, camera);
+    if (raycaster.ray.intersectPlane(groundPlane, _hit)) {
+      _hit.x = Math.max(-10, Math.min(10, _hit.x));
+      _hit.z = Math.max(-7, Math.min(6.8, _hit.z));
+      moveTarget = _hit.clone();
+    }
+  });
 }
 </script>
-
 </body>
 </html>
