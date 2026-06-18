@@ -1162,7 +1162,14 @@ function showPrepScreen() {
   if (type === "tray") c.innerHTML = `<p>Press <b>SPACE</b> (or click) to place <b>6</b> cookies on the tray.</p>
     <div class="bigEmoji" id="trayEmoji">🍪</div><h3 id="prepProgress">Cookies: 0/6</h3>
     <button class="main" onclick="placeCookie()">Place Cookie 🍪</button><p style="opacity:.6">Esc to cancel</p>`;
-  document.getElementById("prepModal").style.display = "flex";
+  const modal = document.getElementById("prepModal");
+  modal.style.display = "flex";
+  modal.onclick = e => {
+    if (state !== "prep") return;
+    if (prepGame.type === "mixing") return;
+    if (e.target.closest("button")) return;
+    handlePrepKey("space");
+  };
 }
 
 function cancelPrep() {
@@ -1173,15 +1180,22 @@ function cancelPrep() {
 
 function handlePrepKey(key) {
   if (key === "escape") { cancelPrep(); return; }
-  if (prepGame.type === "cutting" && key === " ") {
-    if (prepGame.marker >= 0.42 && prepGame.marker <= 0.58) {
+  const isSpace = key === "space" || key === " ";
+  if (prepGame.type === "cutting" && isSpace) {
+    const markerWidth = 8 / 440; // marker width relative to the prep bar
+    const markerStart = prepGame.marker;
+    const markerEnd = Math.min(1, markerStart + markerWidth);
+    const greenStart = 0.42;
+    const greenEnd = 0.58;
+    const overlap = Math.max(0, Math.min(markerEnd, greenEnd) - Math.max(markerStart, greenStart));
+    if (overlap > 0) {
       prepGame.hits++;
       document.getElementById("prepProgress").textContent = "Good cuts: " + prepGame.hits + "/3";
       if (prepGame.hits >= 3) finishPrep();
     } else addMistake("Bad cut.");
   }
-  if (prepGame.type === "measuring" && key === " ") {
-    if (prepGame.fill >= 0.55 && prepGame.fill <= 0.72) finishPrep();
+  if (prepGame.type === "measuring" && isSpace) {
+    if (prepGame.fill >= 0.53 && prepGame.fill <= 0.74) finishPrep();
     else addMistake("Wrong measurement.");
   }
   if (prepGame.type === "mixing" && (key === "a" || key === "d")) {
@@ -1194,7 +1208,7 @@ function handlePrepKey(key) {
       if (prepGame.mixCount >= 10) finishPrep();
     }
   }
-  if (prepGame.type === "tray" && key === " ") placeCookie();
+  if (prepGame.type === "tray" && isSpace) placeCookie();
 }
 
 function placeCookie() {
@@ -1671,19 +1685,24 @@ const _hit = new THREE.Vector3();
 
 function setupInput() {
   window.addEventListener("keydown", e => {
-    const key = e.key.toLowerCase();
+    let key = e.key.toLowerCase();
+    if (key === " " || key === "space" || key === "spacebar") key = "space";
     keys[key] = true;
-    if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) e.preventDefault();
+    if (["arrowup", "arrowdown", "arrowleft", "arrowright", "space"].includes(key)) e.preventDefault();
 
     if (state === "prep") { handlePrepKey(key); return; }
     if (state === "pantry") { if (key === "escape") closePantry(); return; }
-    if (state === "intro") { if (key === "enter" || key === " ") dismissIntro(); return; }
+    if (state === "intro") { if (key === "enter" || key === "space") dismissIntro(); return; }
 
-    if (state === "playing" && !e.repeat && (key === "e" || key === " ")) interact();
-    if (state === "dayclear" && !e.repeat && (key === "enter" || key === " ")) nextDay();
+    if (state === "playing" && !e.repeat && (key === "e" || key === "space")) interact();
+    if (state === "dayclear" && !e.repeat && (key === "enter" || key === "space")) nextDay();
     if (state === "fired" && !e.repeat && key === "r") restartGame();
   });
-  window.addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
+  window.addEventListener("keyup", e => {
+    let key = e.key.toLowerCase();
+    if (key === " " || key === "space" || key === "spacebar") key = "space";
+    keys[key] = false;
+  });
 
   // click-to-move on the floor
   renderer.domElement.addEventListener("pointerdown", e => {
